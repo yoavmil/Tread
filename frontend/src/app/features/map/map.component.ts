@@ -50,7 +50,7 @@ const SOURCE_ID = "places";
           <button class="menu-btn" (click)="menuOpen.set(!menuOpen())" title="Menu">
             <mat-icon>menu</mat-icon>
           </button>
-          <span class="app-logo">Tread</span>
+          <span class="app-logo">תִּדְרֹךְ</span>
         </div>
         <div class="header-right">
           <span class="visit-count">

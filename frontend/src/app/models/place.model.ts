@@ -16,11 +16,11 @@ export interface Place {
 }
 
 export const CATEGORY_LABELS: Record<PlaceCategory, string> = {
-  nature: 'Nature',
-  historical: 'Historical',
-  trail: 'Hiking Trail',
-  beach: 'Beach',
-  city: 'City & Neighborhood'
+  nature: 'טבע',
+  historical: 'היסטורי',
+  trail: 'מסלול' ,
+  beach: 'חוף',
+  city: 'עיר'
 };
 
 export const CATEGORY_COLORS: Record<PlaceCategory, string> = {

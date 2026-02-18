@@ -11,8 +11,8 @@ import { MatButtonModule } from '@angular/material/button';
       <div class="login-card">
         <div class="logo-area">
           <span class="logo-icon">🗺️</span>
-          <h1 class="app-name">Tread</h1>
-          <p class="tagline">Track the places you've explored in Israel</p>
+          <h1 class="app-name">תִּדְרֹךְ</h1>
+          <p class="tagline">איפה היינו מה כבר עשינו</p>
         </div>
 
         <div class="map-preview">
