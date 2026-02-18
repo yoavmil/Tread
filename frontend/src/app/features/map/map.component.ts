@@ -47,10 +47,10 @@ const SOURCE_ID = "places";
     <div class="map-page">
       <header class="map-header">
         <div class="header-left">
+          <button class="menu-btn" (click)="menuOpen.set(!menuOpen())" title="Menu">
+            <mat-icon>menu</mat-icon>
+          </button>
           <span class="app-logo">Tread</span>
-        </div>
-        <div class="header-center">
-          <app-filter-bar (filterChange)="onFilterChange($event)" />
         </div>
         <div class="header-right">
           <span class="visit-count">
@@ -70,6 +70,19 @@ const SOURCE_ID = "places";
           </a>
         </div>
       </header>
+
+      @if (menuOpen()) {
+        <div class="menu-backdrop" (click)="menuOpen.set(false)"></div>
+        <div class="menu-panel">
+          <span class="menu-section-title">
+            Filters
+            @if (activeFilters().categories.length > 0) {
+              <span class="active-count">({{ activeFilters().categories.length }} active)</span>
+            }
+          </span>
+          <app-filter-bar (filterChange)="onFilterChange($event)" />
+        </div>
+      }
 
       <div class="map-container">
         <div #mapEl class="mapbox-map"></div>
@@ -113,6 +126,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   allPlaces = signal<Place[]>([]);
   selectedPlace = signal<Place | null>(null);
   activeFilters = signal<FilterState>({ categories: [], region: null });
+  menuOpen = signal(false);
 
   visitedCount = computed(
     () =>

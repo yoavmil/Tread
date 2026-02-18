@@ -3,6 +3,7 @@
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+  position: relative;
 }
 
 .map-header {
@@ -19,7 +20,28 @@
 }
 
 .header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex-shrink: 0;
+}
+
+.menu-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #1a3a2a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  padding: 0;
+
+  &:hover {
+    background: #f0f0f0;
+  }
 }
 
 .app-logo {
@@ -27,13 +49,6 @@
   font-weight: 700;
   color: #1a3a2a;
   letter-spacing: -0.5px;
-}
-
-.header-center {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  overflow: hidden;
 }
 
 .header-right {
@@ -73,6 +88,51 @@
   color: #fff;
   font-weight: 600;
   font-size: 15px;
+}
+
+// Menu dropdown
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+}
+
+.menu-panel {
+  position: absolute;
+  top: 60px;
+  left: 0;
+  z-index: 200;
+  background: #fff;
+  border-radius: 0 0 12px 0;
+  box-shadow: 4px 4px 20px rgba(0, 0, 0, 0.12);
+  padding: 16px 20px 20px;
+  min-width: 260px;
+
+  ::ng-deep .filter-bar {
+    flex-wrap: wrap;
+  }
+
+  ::ng-deep .category-filters {
+    flex-wrap: wrap;
+    overflow-x: unset;
+  }
+}
+
+.menu-section-title {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #aaa;
+  margin-bottom: 12px;
+}
+
+.active-count {
+  font-weight: 400;
+  color: #1a3a2a;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .map-container {
@@ -148,6 +208,15 @@
 
   .visit-count {
     display: none;
+  }
+
+  .menu-panel {
+    top: 54px;
+    right: 0;
+    border-radius: 0 0 12px 12px;
+    min-width: unset;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .place-panel {
