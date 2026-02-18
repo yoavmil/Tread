@@ -9,8 +9,8 @@ import {
   computed,
   effect,
 } from "@angular/core";
-import { ActivatedRoute, Router, RouterModule } from "@angular/router";
-import { CommonModule } from "@angular/common";
+import { ActivatedRoute, RouterModule } from "@angular/router";
+import { CommonModule, Location } from "@angular/common";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
@@ -80,6 +80,15 @@ const SOURCE_ID = "places";
           </div>
         }
 
+        <div class="map-controls">
+          <button class="map-ctrl-btn" title="Fit Israel" (click)="fitIsrael()">
+            <mat-icon>crop_free</mat-icon>
+          </button>
+          <button class="map-ctrl-btn" title="My location" (click)="goToMyLocation()">
+            <mat-icon>my_location</mat-icon>
+          </button>
+        </div>
+
         @if (selectedPlace()) {
           <app-place-panel
             [place]="selectedPlace()!"
@@ -120,7 +129,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     private placesService: PlacesService,
     public auth: AuthService,
     private route: ActivatedRoute,
-    private router: Router,
+    private location: Location,
   ) {
     // Refresh source data whenever visited set changes
     effect(() => {
@@ -365,7 +374,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     const place = this.allPlaces().find((p) => p._id === props["id"]);
     if (place) {
       this.openPanel(place);
-      this.router.navigate(["/map", place._id]);
+      this.location.replaceState(`/map/${place._id}`);
     }
   }
 
@@ -386,7 +395,28 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.mapReady && this.map.getLayer(LAYER_SELECTED)) {
       this.map.setFilter(LAYER_SELECTED, ["==", ["get", "id"], ""]);
     }
-    this.router.navigate(["/map"]);
+    this.location.replaceState("/map");
+  }
+
+  fitIsrael(): void {
+    this.map?.fitBounds(
+      [
+        [34.2, 29.4],
+        [35.9, 33.4],
+      ],
+      { padding: 40, duration: 800 },
+    );
+  }
+
+  goToMyLocation(): void {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition((pos) => {
+      this.map?.flyTo({
+        center: [pos.coords.longitude, pos.coords.latitude],
+        zoom: 13,
+        duration: 800,
+      });
+    });
   }
 
   onToggleVisit(): void {
