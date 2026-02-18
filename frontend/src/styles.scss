@@ -1,0 +1,62 @@
+@use '@angular/material' as mat;
+
+// Import Angular Material prebuilt theme
+@include mat.core();
+
+$tread-primary: mat.define-palette(mat.$green-palette, 800, 600, 900);
+$tread-accent:  mat.define-palette(mat.$amber-palette, 700);
+
+$tread-theme: mat.define-light-theme((
+  color: (
+    primary: $tread-primary,
+    accent:  $tread-accent
+  ),
+  typography: mat.define-typography-config($font-family: 'Inter, sans-serif'),
+  density: 0
+));
+
+@include mat.all-component-themes($tread-theme);
+
+// Global reset & base
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background: #f8f9fa;
+  color: #1a1a1a;
+}
+
+// Mapbox overrides
+.mapboxgl-ctrl-attrib {
+  font-size: 10px;
+}
+
+.mapboxgl-ctrl-bottom-right {
+  bottom: 24px;
+  right: 10px;
+}
+
+// Scrollbar styling
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: #bbb; }
+
+// Angular Material compact adjustments
+.mat-mdc-progress-bar {
+  border-radius: 4px;
+  --mdc-linear-progress-track-height: 6px;
+  --mdc-linear-progress-active-indicator-height: 6px;
+}
