@@ -7,3 +7,5 @@ frontend/dist/
 frontend/.angular/
 frontend/src/environments/environment*.ts
 !frontend/src/environments/environment.example.ts
+package-lock.json
+*/package-lock.json
