@@ -167,9 +167,11 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     for (const layer of style.layers) {
       if (layer.type !== "symbol") continue;
 
-      // only touch layers that actually have a text-field
+      // only touch layers that actually have a text-field referencing name properties
+      // (skip road-shield layers that use "ref" for highway numbers)
       const textField = (layer.layout as any)?.["text-field"];
       if (!textField) continue;
+      if (!JSON.stringify(textField).includes('"name')) continue;
 
       // Hebrew first, then fallback to local name, then English
       map.setLayoutProperty(layer.id, "text-field", [
