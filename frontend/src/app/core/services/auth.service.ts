@@ -14,12 +14,7 @@ export class AuthService {
   readonly isLoggedIn = computed(() => this._user() !== null);
   readonly visitedPlaceIds = computed(() => new Set(this._user()?.visitedPlaces ?? []));
 
-  constructor(private http: HttpClient, private router: Router) {
-    // Restore session on startup
-    if (this.getToken()) {
-      this.loadUser().subscribe({ error: () => this.logout() });
-    }
-  }
+  constructor(private http: HttpClient, private router: Router) {}
 
   getToken(): string | null {
     return localStorage.getItem(TOKEN_KEY);

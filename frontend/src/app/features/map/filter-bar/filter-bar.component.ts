@@ -1,12 +1,10 @@
 import { Component, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
-import { MatSelectModule } from '@angular/material/select';
-import { FormsModule } from '@angular/forms';
 
 import {
   PlaceCategory, PlaceRegion,
-  CATEGORY_LABELS, CATEGORY_COLORS, REGION_LABELS
+  CATEGORY_LABELS, CATEGORY_COLORS
 } from '../../../models/place.model';
 
 export interface FilterState {
@@ -17,7 +15,7 @@ export interface FilterState {
 @Component({
   selector: 'app-filter-bar',
   standalone: true,
-  imports: [CommonModule, MatButtonToggleModule, MatSelectModule, FormsModule],
+  imports: [CommonModule, MatButtonToggleModule],
   template: `
     <div class="filter-bar">
       <div class="category-filters">
@@ -32,15 +30,6 @@ export interface FilterState {
             {{ cat.label }}
           </button>
         }
-      </div>
-
-      <div class="region-filter">
-        <select class="region-select" [(ngModel)]="selectedRegion" (ngModelChange)="emitChange()">
-          <option [ngValue]="null">All regions</option>
-          @for (region of regions; track region.value) {
-            <option [ngValue]="region.value">{{ region.label }}</option>
-          }
-        </select>
       </div>
     </div>
   `,
@@ -99,32 +88,12 @@ export interface FilterState {
       flex-shrink: 0;
     }
 
-    .region-select {
-      padding: 5px 10px;
-      border: 1.5px solid #e0e0e0;
-      border-radius: 20px;
-      background: #fff;
-      font-size: 12px;
-      font-weight: 500;
-      color: #555;
-      cursor: pointer;
-      outline: none;
-      font-family: inherit;
-      white-space: nowrap;
-
-      &:focus {
-        border-color: #1a3a2a;
-      }
-    }
-
     @media (max-width: 768px) {
       .filter-bar {
         flex-direction: column;
         align-items: stretch;
         gap: 4px;
       }
-
-      .region-filter { display: none; }
     }
   `]
 })
@@ -132,17 +101,11 @@ export class FilterBarComponent {
   @Output() filterChange = new EventEmitter<FilterState>();
 
   selectedCategories: PlaceCategory[] = [];
-  selectedRegion: PlaceRegion | null = null;
 
   categories = (Object.keys(CATEGORY_LABELS) as PlaceCategory[]).map(v => ({
     value: v,
     label: CATEGORY_LABELS[v],
     color: CATEGORY_COLORS[v]
-  }));
-
-  regions = (Object.keys(REGION_LABELS) as PlaceRegion[]).map(v => ({
-    value: v,
-    label: REGION_LABELS[v]
   }));
 
   isActive(cat: PlaceCategory): boolean {
@@ -161,7 +124,7 @@ export class FilterBarComponent {
   emitChange(): void {
     this.filterChange.emit({
       categories: this.selectedCategories,
-      region: this.selectedRegion
+      region: null
     });
   }
 }

@@ -146,6 +146,12 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.map.on('load', () => {
       this.mapReady = true;
+      this.map.setLayoutProperty('country-label', 'text-field', ['get', 'name_he']);
+      this.map.setLayoutProperty('settlement-label', 'text-field', ['get', 'name_he']);
+      this.map.setLayoutProperty('state-label', 'text-field', ['get', 'name_he']);
+      this.map.setLayoutProperty('natural-point-label', 'text-field', ['get', 'name_he']);
+      this.map.setLayoutProperty('water-point-label', 'text-field', ['get', 'name_he']);
+      this.map.setLayoutProperty('road-label', 'text-field', ['get', 'name_he']);
       if (this.allPlaces().length > 0) {
         this.initLayers(this.allPlaces());
       }
