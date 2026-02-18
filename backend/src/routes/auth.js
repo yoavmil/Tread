@@ -19,7 +19,7 @@ router.get('/google/callback',
       process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
-    res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}`);
+    res.redirect(`${process.env.FRONTEND_URL}/callback?token=${token}`);
   }
 );
 
