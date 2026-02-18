@@ -1,33 +1,47 @@
 import {
-  Component, OnInit, OnDestroy, AfterViewInit,
-  ElementRef, ViewChild, signal, computed, effect
-} from '@angular/core';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { CommonModule } from '@angular/common';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import mapboxgl from 'mapbox-gl';
+  Component,
+  OnInit,
+  OnDestroy,
+  AfterViewInit,
+  ElementRef,
+  ViewChild,
+  signal,
+  computed,
+  effect,
+} from "@angular/core";
+import { ActivatedRoute, Router, RouterModule } from "@angular/router";
+import { CommonModule } from "@angular/common";
+import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
+import { MatIconModule } from "@angular/material/icon";
+import { MatButtonModule } from "@angular/material/button";
+import mapboxgl from "mapbox-gl";
 
-import { PlacesService } from '../../core/services/places.service';
-import { AuthService } from '../../core/services/auth.service';
-import { Place, CATEGORY_COLORS } from '../../models/place.model';
-import { environment } from '../../../environments/environment';
-import { FilterBarComponent, FilterState } from './filter-bar/filter-bar.component';
-import { PlacePanelComponent } from './place-panel/place-panel.component';
+import { PlacesService } from "../../core/services/places.service";
+import { AuthService } from "../../core/services/auth.service";
+import { Place, CATEGORY_COLORS } from "../../models/place.model";
+import { environment } from "../../../environments/environment";
+import {
+  FilterBarComponent,
+  FilterState,
+} from "./filter-bar/filter-bar.component";
+import { PlacePanelComponent } from "./place-panel/place-panel.component";
 
-const LAYER_UNVISITED = 'places-unvisited';
-const LAYER_VISITED   = 'places-visited';
-const LAYER_SELECTED  = 'places-selected';
-const SOURCE_ID       = 'places';
+const LAYER_UNVISITED = "places-unvisited";
+const LAYER_VISITED = "places-visited";
+const LAYER_SELECTED = "places-selected";
+const SOURCE_ID = "places";
 
 @Component({
-  selector: 'app-map',
+  selector: "app-map",
   standalone: true,
   imports: [
-    CommonModule, RouterModule, MatProgressSpinnerModule,
-    MatIconModule, MatButtonModule,
-    FilterBarComponent, PlacePanelComponent
+    CommonModule,
+    RouterModule,
+    MatProgressSpinnerModule,
+    MatIconModule,
+    MatButtonModule,
+    FilterBarComponent,
+    PlacePanelComponent,
   ],
   template: `
     <div class="map-page">
@@ -44,7 +58,12 @@ const SOURCE_ID       = 'places';
           </span>
           <a routerLink="/profile" class="avatar-btn">
             @if (user()?.photo) {
-              <img [src]="user()!.photo" [alt]="user()!.displayName" class="avatar" referrerpolicy="no-referrer">
+              <img
+                [src]="user()!.photo"
+                [alt]="user()!.displayName"
+                class="avatar"
+                referrerpolicy="no-referrer"
+              />
             } @else {
               <span class="avatar-placeholder">{{ userInitial() }}</span>
             }
@@ -73,10 +92,10 @@ const SOURCE_ID       = 'places';
       </div>
     </div>
   `,
-  styleUrl: './map.component.scss'
+  styleUrl: "./map.component.scss",
 })
 export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
-  @ViewChild('mapEl') mapEl!: ElementRef<HTMLDivElement>;
+  @ViewChild("mapEl") mapEl!: ElementRef<HTMLDivElement>;
 
   private map!: mapboxgl.Map;
   private mapReady = false;
@@ -86,18 +105,22 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   selectedPlace = signal<Place | null>(null);
   activeFilters = signal<FilterState>({ categories: [], region: null });
 
-  visitedCount = computed(() =>
-    this.allPlaces().filter(p => this.auth.visitedPlaceIds().has(p._id)).length
+  visitedCount = computed(
+    () =>
+      this.allPlaces().filter((p) => this.auth.visitedPlaceIds().has(p._id))
+        .length,
   );
   user = this.auth.user;
-  userInitial = computed(() => this.auth.user()?.displayName?.charAt(0).toUpperCase() ?? '?');
+  userInitial = computed(
+    () => this.auth.user()?.displayName?.charAt(0).toUpperCase() ?? "?",
+  );
   isVisited = (id: string) => this.auth.visitedPlaceIds().has(id);
 
   constructor(
     private placesService: PlacesService,
     public auth: AuthService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
   ) {
     // Refresh source data whenever visited set changes
     effect(() => {
@@ -114,44 +137,65 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.placesService.getAll().subscribe({
-      next: places => {
+      next: (places) => {
         this.allPlaces.set(places);
         this.loading.set(false);
         if (this.mapReady) this.initLayers(places);
 
-        const placeId = this.route.snapshot.paramMap.get('placeId');
+        const placeId = this.route.snapshot.paramMap.get("placeId");
         if (placeId) {
-          const place = places.find(p => p._id === placeId);
+          const place = places.find((p) => p._id === placeId);
           if (place) this.openPanel(place);
         }
       },
-      error: () => this.loading.set(false)
+      error: () => this.loading.set(false),
     });
   }
+  private setHebrewLabelsAsDefault(map: mapboxgl.Map) {
+    const style = map.getStyle();
+    if (!style?.layers) return;
 
+    for (const layer of style.layers) {
+      if (layer.type !== "symbol") continue;
+
+      // only touch layers that actually have a text-field
+      const textField = (layer.layout as any)?.["text-field"];
+      if (!textField) continue;
+
+      // Hebrew first, then fallback to local name, then English
+      map.setLayoutProperty(layer.id, "text-field", [
+        "coalesce",
+        ["get", "name_he"],
+        ["get", "name"],
+        ["get", "name_en"],
+      ]);
+    }
+  }
   ngAfterViewInit(): void {
-    (mapboxgl as typeof mapboxgl & { accessToken: string }).accessToken = environment.mapboxToken;
+    (mapboxgl as typeof mapboxgl & { accessToken: string }).accessToken =
+      environment.mapboxToken;
 
     this.map = new mapboxgl.Map({
       container: this.mapEl.nativeElement,
-      style: 'mapbox://styles/mapbox/outdoors-v12',
+      style: "mapbox://styles/mapbox/outdoors-v12",
       center: [35.0, 31.5],
       zoom: 7,
       minZoom: 5,
-      maxZoom: 16
+      maxZoom: 16,
     });
 
-    this.map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
-    this.map.fitBounds([[34.2, 29.4], [35.9, 33.4]], { padding: 40, duration: 0 });
+    this.map.addControl(new mapboxgl.NavigationControl(), "bottom-right");
+    this.map.fitBounds(
+      [
+        [34.2, 29.4],
+        [35.9, 33.4],
+      ],
+      { padding: 40, duration: 0 },
+    );
 
-    this.map.on('load', () => {
+    this.map.on("load", () => {
       this.mapReady = true;
-      this.map.setLayoutProperty('country-label', 'text-field', ['get', 'name_he']);
-      this.map.setLayoutProperty('settlement-label', 'text-field', ['get', 'name_he']);
-      this.map.setLayoutProperty('state-label', 'text-field', ['get', 'name_he']);
-      this.map.setLayoutProperty('natural-point-label', 'text-field', ['get', 'name_he']);
-      this.map.setLayoutProperty('water-point-label', 'text-field', ['get', 'name_he']);
-      this.map.setLayoutProperty('road-label', 'text-field', ['get', 'name_he']);
+      this.setHebrewLabelsAsDefault(this.map);
       if (this.allPlaces().length > 0) {
         this.initLayers(this.allPlaces());
       }
@@ -163,19 +207,22 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   private buildGeoJSON(places: Place[]): GeoJSON.FeatureCollection {
     const visitedIds = this.auth.visitedPlaceIds();
     return {
-      type: 'FeatureCollection',
-      features: places.map(p => ({
-        type: 'Feature',
+      type: "FeatureCollection",
+      features: places.map((p) => ({
+        type: "Feature",
         id: p._id,
-        geometry: { type: 'Point', coordinates: [p.coordinates.lng, p.coordinates.lat] },
+        geometry: {
+          type: "Point",
+          coordinates: [p.coordinates.lng, p.coordinates.lat],
+        },
         properties: {
           id: p._id,
           name: p.name,
           category: p.category,
           region: p.region,
-          visited: visitedIds.has(p._id)
-        }
-      }))
+          visited: visitedIds.has(p._id),
+        },
+      })),
     };
   }
 
@@ -183,69 +230,77 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private initLayers(places: Place[]): void {
     this.map.addSource(SOURCE_ID, {
-      type: 'geojson',
-      data: this.buildGeoJSON(places)
+      type: "geojson",
+      data: this.buildGeoJSON(places),
     });
 
     // Unvisited places — color by category
     this.map.addLayer({
       id: LAYER_UNVISITED,
-      type: 'circle',
+      type: "circle",
       source: SOURCE_ID,
-      filter: ['==', ['get', 'visited'], false],
+      filter: ["==", ["get", "visited"], false],
       paint: {
-        'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 5, 12, 9],
-        'circle-color': this.categoryColorExpression(),
-        'circle-stroke-width': 1.5,
-        'circle-stroke-color': '#fff',
-        'circle-opacity': 0.9
-      }
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 5, 12, 9],
+        "circle-color": this.categoryColorExpression(),
+        "circle-stroke-width": 1.5,
+        "circle-stroke-color": "#fff",
+        "circle-opacity": 0.9,
+      },
     });
 
     // Visited places — green
     this.map.addLayer({
       id: LAYER_VISITED,
-      type: 'circle',
+      type: "circle",
       source: SOURCE_ID,
-      filter: ['==', ['get', 'visited'], true],
+      filter: ["==", ["get", "visited"], true],
       paint: {
-        'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 5, 12, 9],
-        'circle-color': '#4caf50',
-        'circle-stroke-width': 2,
-        'circle-stroke-color': '#fff',
-        'circle-opacity': 1
-      }
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 5, 12, 9],
+        "circle-color": "#4caf50",
+        "circle-stroke-width": 2,
+        "circle-stroke-color": "#fff",
+        "circle-opacity": 1,
+      },
     });
 
     // Selected place highlight ring
     this.map.addLayer({
       id: LAYER_SELECTED,
-      type: 'circle',
+      type: "circle",
       source: SOURCE_ID,
-      filter: ['==', ['get', 'id'], ''],
+      filter: ["==", ["get", "id"], ""],
       paint: {
-        'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 9, 12, 14],
-        'circle-color': 'transparent',
-        'circle-stroke-width': 3,
-        'circle-stroke-color': '#1a3a2a',
-        'circle-opacity': 1
-      }
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 9, 12, 14],
+        "circle-color": "transparent",
+        "circle-stroke-width": 3,
+        "circle-stroke-color": "#1a3a2a",
+        "circle-opacity": 1,
+      },
     });
 
     // Click handlers
-    this.map.on('click', LAYER_UNVISITED, e => this.onMarkerClick(e));
-    this.map.on('click', LAYER_VISITED,   e => this.onMarkerClick(e));
+    this.map.on("click", LAYER_UNVISITED, (e) => this.onMarkerClick(e));
+    this.map.on("click", LAYER_VISITED, (e) => this.onMarkerClick(e));
 
     // Cursor pointer on hover
     for (const layer of [LAYER_UNVISITED, LAYER_VISITED]) {
-      this.map.on('mouseenter', layer, () => this.map.getCanvas().style.cursor = 'pointer');
-      this.map.on('mouseleave', layer, () => this.map.getCanvas().style.cursor = '');
+      this.map.on(
+        "mouseenter",
+        layer,
+        () => (this.map.getCanvas().style.cursor = "pointer"),
+      );
+      this.map.on(
+        "mouseleave",
+        layer,
+        () => (this.map.getCanvas().style.cursor = ""),
+      );
     }
 
     // Click on empty map = close panel
-    this.map.on('click', e => {
+    this.map.on("click", (e) => {
       const features = this.map.queryRenderedFeatures(e.point, {
-        layers: [LAYER_UNVISITED, LAYER_VISITED]
+        layers: [LAYER_UNVISITED, LAYER_VISITED],
       });
       if (!features.length) this.closePanel();
     });
@@ -259,11 +314,13 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     for (const [cat, color] of Object.entries(CATEGORY_COLORS)) {
       entries.push(cat, color);
     }
-    return ['match', ['get', 'category'], ...entries, '#999'];
+    return ["match", ["get", "category"], ...entries, "#999"];
   }
 
   private refreshSource(): void {
-    const source = this.map.getSource(SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
+    const source = this.map.getSource(SOURCE_ID) as
+      | mapboxgl.GeoJSONSource
+      | undefined;
     source?.setData(this.buildGeoJSON(this.allPlaces()));
   }
 
@@ -272,17 +329,29 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const baseFilter = this.buildMapboxFilter(filters);
 
-    this.map.setFilter(LAYER_UNVISITED, ['all', ...baseFilter, ['==', ['get', 'visited'], false]]);
-    this.map.setFilter(LAYER_VISITED,   ['all', ...baseFilter, ['==', ['get', 'visited'], true]]);
+    this.map.setFilter(LAYER_UNVISITED, [
+      "all",
+      ...baseFilter,
+      ["==", ["get", "visited"], false],
+    ]);
+    this.map.setFilter(LAYER_VISITED, [
+      "all",
+      ...baseFilter,
+      ["==", ["get", "visited"], true],
+    ]);
   }
 
   private buildMapboxFilter(filters: FilterState): mapboxgl.Expression[] {
     const conditions: mapboxgl.Expression[] = [];
     if (filters.categories.length > 0) {
-      conditions.push(['in', ['get', 'category'], ['literal', filters.categories]]);
+      conditions.push([
+        "in",
+        ["get", "category"],
+        ["literal", filters.categories],
+      ]);
     }
     if (filters.region) {
-      conditions.push(['==', ['get', 'region'], filters.region]);
+      conditions.push(["==", ["get", "region"], filters.region]);
     }
     return conditions;
   }
@@ -293,31 +362,31 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     e.originalEvent.stopPropagation();
     const props = e.features?.[0]?.properties;
     if (!props) return;
-    const place = this.allPlaces().find(p => p._id === props['id']);
+    const place = this.allPlaces().find((p) => p._id === props["id"]);
     if (place) {
       this.openPanel(place);
-      this.router.navigate(['/map', place._id]);
+      this.router.navigate(["/map", place._id]);
     }
   }
 
   openPanel(place: Place): void {
     this.selectedPlace.set(place);
     if (this.mapReady && this.map.getLayer(LAYER_SELECTED)) {
-      this.map.setFilter(LAYER_SELECTED, ['==', ['get', 'id'], place._id]);
+      this.map.setFilter(LAYER_SELECTED, ["==", ["get", "id"], place._id]);
     }
     this.map?.flyTo({
       center: [place.coordinates.lng, place.coordinates.lat],
       zoom: Math.max(this.map.getZoom(), 10),
-      duration: 600
+      duration: 600,
     });
   }
 
   closePanel(): void {
     this.selectedPlace.set(null);
     if (this.mapReady && this.map.getLayer(LAYER_SELECTED)) {
-      this.map.setFilter(LAYER_SELECTED, ['==', ['get', 'id'], '']);
+      this.map.setFilter(LAYER_SELECTED, ["==", ["get", "id"], ""]);
     }
-    this.router.navigate(['/map']);
+    this.router.navigate(["/map"]);
   }
 
   onToggleVisit(): void {
