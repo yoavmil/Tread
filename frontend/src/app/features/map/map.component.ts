@@ -54,7 +54,7 @@ const SOURCE_ID = "places";
         </div>
         <div class="header-right">
           <span class="visit-count">
-            {{ visitedCount() }} / {{ allPlaces().length }} visited
+            {{ visitedCount() }}/{{ allPlaces().length }}
           </span>
           <a routerLink="/profile" class="avatar-btn">
             @if (user()?.photo) {
