@@ -257,7 +257,51 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ── Layer setup ────────────────────────────────────────────────────────────
 
+  private async loadTrailLine(): Promise<void> {
+    const query = `[out:json][timeout:120];relation(282071);way(r);out geom;`;
+    const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok || !this.mapReady) return;
+      const data = await res.json();
+      if (!this.mapReady) return;
+
+      const features: GeoJSON.Feature[] = (data.elements as any[])
+        .filter(el => el.type === 'way' && el.geometry?.length)
+        .map(way => ({
+          type: 'Feature' as const,
+          geometry: {
+            type: 'LineString' as const,
+            coordinates: way.geometry.map((pt: { lon: number; lat: number }) => [pt.lon, pt.lat]),
+          },
+          properties: {},
+        }));
+
+      this.map.addSource('int-trail', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features },
+      });
+      this.map.addLayer(
+        {
+          id: 'int-trail-line',
+          type: 'line',
+          source: 'int-trail',
+          paint: {
+            'line-color': '#E07B39',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 5, 1.5, 12, 3],
+            'line-opacity': 0.9,
+          },
+        },
+        LAYER_UNVISITED, // insert below markers
+      );
+    } catch {
+      // trail line is decorative — ignore errors
+    }
+  }
+
   private initLayers(places: Place[]): void {
+    this.loadTrailLine();
+
     this.map.addSource(SOURCE_ID, {
       type: "geojson",
       data: this.buildGeoJSON(places),
