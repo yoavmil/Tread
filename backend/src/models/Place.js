@@ -2,7 +2,6 @@ const mongoose = require('mongoose');
 
 const placeSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  nameHe: { type: String, default: '' },
   category: {
     type: String,
     enum: ['nature', 'historical', 'trail', 'city'],
@@ -15,7 +14,7 @@ const placeSchema = new mongoose.Schema({
   },
   region: {
     type: String,
-    enum: ['north', 'center', 'jerusalem', 'south', 'eilat'],
+    enum: ['north', 'center', 'jerusalem', 'south'],
     required: true
   },
   difficulty: {

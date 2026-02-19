@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
-import { Place, CATEGORY_LABELS, REGION_LABELS } from '../../../models/place.model';
+import { Place, CATEGORY_LABELS, REGION_LABELS, DIFFICULTY_LABELS } from '../../../models/place.model';
 import { VisitsService } from '../../../core/services/visits.service';
 
 @Component({
@@ -28,7 +28,7 @@ import { VisitsService } from '../../../core/services/visits.service';
           <span class="region-chip">{{ regionLabel }}</span>
           @if (place.difficulty) {
             <span class="difficulty-chip difficulty-{{ place.difficulty }}">
-              {{ place.difficulty }}
+              {{ difficultyLabel }}
             </span>
           }
         </div>
@@ -39,9 +39,6 @@ import { VisitsService } from '../../../core/services/visits.service';
 
       <div class="panel-body">
         <h2 class="place-name">{{ place.name }}</h2>
-        @if (place.nameHe) {
-          <p class="place-name-he">{{ place.nameHe }}</p>
-        }
 
         @if (place.description) {
           <p class="description">{{ place.description }}</p>
@@ -177,15 +174,6 @@ import { VisitsService } from '../../../core/services/visits.service';
       line-height: 1.3;
     }
 
-    .place-name-he {
-      font-size: 16px;
-      color: #888;
-      margin: 0 0 12px;
-      direction: rtl;
-      text-align: right;
-      font-weight: 400;
-    }
-
     .description {
       font-size: 14px;
       color: #444;
@@ -251,6 +239,10 @@ export class PlacePanelComponent {
 
   get regionLabel(): string {
     return REGION_LABELS[this.place.region];
+  }
+
+  get difficultyLabel(): string {
+    return this.place.difficulty ? DIFFICULTY_LABELS[this.place.difficulty] : '';
   }
 
   constructor(private visits: VisitsService) {}

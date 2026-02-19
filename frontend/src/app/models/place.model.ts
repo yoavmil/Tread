@@ -1,11 +1,10 @@
 export type PlaceCategory = 'nature' | 'historical' | 'trail' | 'city';
-export type PlaceRegion = 'north' | 'center' | 'jerusalem' | 'south' | 'eilat';
+export type PlaceRegion = 'north' | 'center' | 'jerusalem' | 'south';
 export type TrailDifficulty = 'easy' | 'moderate' | 'hard' | null;
 
 export interface Place {
   _id: string;
   name: string;
-  nameHe: string;
   category: PlaceCategory;
   description: string;
   coordinates: { lat: number; lng: number };
@@ -22,10 +21,15 @@ export const CATEGORY_LABELS: Record<PlaceCategory, string> = {
   city: 'עיר'
 };
 
+export const DIFFICULTY_LABELS: Record<NonNullable<TrailDifficulty>, string> = {
+  easy: 'קל',
+  moderate: 'בינוני',
+  hard: 'קשה'
+};
+
 export const REGION_LABELS: Record<PlaceRegion, string> = {
-  north: 'North',
-  center: 'Center',
-  jerusalem: 'Jerusalem',
-  south: 'South',
-  eilat: 'Eilat'
+  north: 'צפון',
+  center: 'מרכז',
+  jerusalem: 'ירושלים',
+  south: 'דרום'
 };

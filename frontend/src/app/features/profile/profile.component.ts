@@ -91,7 +91,7 @@ import { Place, PlaceCategory, CATEGORY_LABELS } from '../../models/place.model'
                       <span class="place-cat-dot" [style.background]="getCatColor(place.category)"></span>
                       <div>
                         <p class="place-item-name">{{ place.name }}</p>
-                        <p class="place-item-he">{{ place.nameHe }}</p>
+                        <p class="place-item-he">{{ place.name }}</p>
                       </div>
                     </div>
                     <button mat-icon-button class="remove-btn" (click)="removeVisit(place)">
