@@ -674,7 +674,7 @@ const places = [
   {
     name: 'Gordon Beach, Tel Aviv',
     nameHe: 'חוף גורדון',
-    category: 'beach',
+    category: 'nature',
     region: 'center',
     description: 'Central Tel Aviv beach lined with cafes and beach volleyball courts, busy and vibrant year-round.',
     coordinates: { lat: 32.0809, lng: 34.7657 },
@@ -683,7 +683,7 @@ const places = [
   {
     name: 'Frishman Beach, Tel Aviv',
     nameHe: 'חוף פרישמן',
-    category: 'beach',
+    category: 'nature',
     region: 'center',
     description: 'Popular central Tel Aviv beach next to the Ben Gurion statue, with calm waters and a lively promenade.',
     coordinates: { lat: 32.0780, lng: 34.7648 },
@@ -692,7 +692,7 @@ const places = [
   {
     name: 'Hilton Beach, Tel Aviv',
     nameHe: 'חוף הילטון',
-    category: 'beach',
+    category: 'nature',
     region: 'center',
     description: 'North Tel Aviv beach renowned as a gay-friendly space and dog beach. Has a skate park and is popular with surfers.',
     coordinates: { lat: 32.0885, lng: 34.7668 },
@@ -701,7 +701,7 @@ const places = [
   {
     name: 'Dor Habonim Beach',
     nameHe: 'חוף דור הבונים',
-    category: 'beach',
+    category: 'nature',
     region: 'north',
     description: 'Beautiful nature beach north of Caesarea with lagoons, ruins, and quiet coves ideal for snorkeling.',
     coordinates: { lat: 32.6124, lng: 34.9212 },
@@ -710,7 +710,7 @@ const places = [
   {
     name: 'Coral Beach Nature Reserve, Eilat',
     nameHe: 'שמורת חוף האלמוגים',
-    category: 'beach',
+    category: 'nature',
     region: 'eilat',
     description: 'Israel\'s only coral reef, in the Red Sea. World-class snorkeling and diving with tropical fish and vibrant corals.',
     coordinates: { lat: 29.5073, lng: 34.9176 },
@@ -719,7 +719,7 @@ const places = [
   {
     name: 'Caesarea Beach',
     nameHe: 'חוף קיסריה',
-    category: 'beach',
+    category: 'nature',
     region: 'center',
     description: 'Sandy beach with the backdrop of the ancient Roman harbor and aqueduct ruins — swimming next to history.',
     coordinates: { lat: 32.4985, lng: 34.8906 },
@@ -728,7 +728,7 @@ const places = [
   {
     name: 'Achziv Beach',
     nameHe: 'חוף אכזיב',
-    category: 'beach',
+    category: 'nature',
     region: 'north',
     description: 'Long sandy beach north of Nahariya with calm, clear Mediterranean waters and the ruins of the ancient port city.',
     coordinates: { lat: 33.0452, lng: 35.0960 },
@@ -737,7 +737,7 @@ const places = [
   {
     name: 'Palmahim Beach',
     nameHe: 'חוף פלמחים',
-    category: 'beach',
+    category: 'nature',
     region: 'center',
     description: 'Quiet natural beach south of Tel Aviv with sand dunes, an ancient Philistine harbor, and a nature reserve.',
     coordinates: { lat: 31.9317, lng: 34.6976 },

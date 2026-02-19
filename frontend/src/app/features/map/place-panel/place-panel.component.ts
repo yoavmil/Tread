@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
-import { Place, CATEGORY_LABELS, CATEGORY_COLORS, REGION_LABELS } from '../../../models/place.model';
+import { Place, CATEGORY_LABELS, REGION_LABELS } from '../../../models/place.model';
 import { VisitsService } from '../../../core/services/visits.service';
 
 @Component({
@@ -246,7 +246,7 @@ export class PlacePanelComponent {
   }
 
   get categoryColor(): string {
-    return CATEGORY_COLORS[this.place.category];
+    return '#1a3a2a';
   }
 
   get regionLabel(): string {

@@ -100,10 +100,10 @@
 .menu-panel {
   position: absolute;
   top: 60px;
-  left: 0;
+  right: 0;
   z-index: 200;
   background: #fff;
-  border-radius: 0 0 12px 0;
+  border-radius: 0 0 0 12px;
   box-shadow: 4px 4px 20px rgba(0, 0, 0, 0.12);
   padding: 16px 20px 20px;
   min-width: 260px;

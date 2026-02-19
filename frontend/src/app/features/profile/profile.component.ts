@@ -9,7 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthService } from '../../core/services/auth.service';
 import { PlacesService } from '../../core/services/places.service';
 import { VisitsService } from '../../core/services/visits.service';
-import { Place, PlaceCategory, CATEGORY_LABELS, CATEGORY_COLORS } from '../../models/place.model';
+import { Place, PlaceCategory, CATEGORY_LABELS } from '../../models/place.model';
 
 @Component({
   selector: 'app-profile',
@@ -348,7 +348,7 @@ export class ProfileComponent implements OnInit {
       return {
         key: cat,
         label: CATEGORY_LABELS[cat],
-        color: CATEGORY_COLORS[cat],
+        color: '#1a3a2a',
         total,
         visited,
         percent: total ? Math.round((visited / total) * 100) : 0
@@ -373,7 +373,7 @@ export class ProfileComponent implements OnInit {
   }
 
   getCatColor(cat: PlaceCategory): string {
-    return CATEGORY_COLORS[cat];
+    return '#1a3a2a';
   }
 
   removeVisit(place: Place): void {

@@ -18,7 +18,7 @@ import mapboxgl from "mapbox-gl";
 
 import { PlacesService } from "../../core/services/places.service";
 import { AuthService } from "../../core/services/auth.service";
-import { Place, CATEGORY_COLORS } from "../../models/place.model";
+import { Place } from "../../models/place.model";
 import { environment } from "../../../environments/environment";
 import {
   FilterBarComponent,
@@ -75,7 +75,7 @@ const SOURCE_ID = "places";
         <div class="menu-backdrop" (click)="menuOpen.set(false)"></div>
         <div class="menu-panel">
           <span class="menu-section-title">
-            Filters
+            מסננים
             @if (activeFilters().categories.length > 0) {
               <span class="active-count">({{ activeFilters().categories.length }} active)</span>
             }
@@ -125,7 +125,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   loading = signal(true);
   allPlaces = signal<Place[]>([]);
   selectedPlace = signal<Place | null>(null);
-  activeFilters = signal<FilterState>({ categories: [], region: null });
+  activeFilters = signal<FilterState>({ categories: [], region: null, showVisited: true });
   menuOpen = signal(false);
 
   visitedCount = computed(
@@ -259,7 +259,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       data: this.buildGeoJSON(places),
     });
 
-    // Unvisited places — color by category
+    // Unvisited places — orange
     this.map.addLayer({
       id: LAYER_UNVISITED,
       type: "circle",
@@ -267,14 +267,14 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       filter: ["==", ["get", "visited"], false],
       paint: {
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 5, 12, 9],
-        "circle-color": this.categoryColorExpression(),
+        "circle-color": "#FF8C00",
         "circle-stroke-width": 1.5,
         "circle-stroke-color": "#fff",
         "circle-opacity": 0.9,
       },
     });
 
-    // Visited places — green
+    // Visited places — gray
     this.map.addLayer({
       id: LAYER_VISITED,
       type: "circle",
@@ -282,7 +282,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       filter: ["==", ["get", "visited"], true],
       paint: {
         "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 5, 12, 9],
-        "circle-color": "#4caf50",
+        "circle-color": "#9E9E9E",
         "circle-stroke-width": 2,
         "circle-stroke-color": "#fff",
         "circle-opacity": 1,
@@ -334,14 +334,6 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.applyLayerFilters(this.activeFilters());
   }
 
-  private categoryColorExpression(): mapboxgl.Expression {
-    const entries: any[] = [];
-    for (const [cat, color] of Object.entries(CATEGORY_COLORS)) {
-      entries.push(cat, color);
-    }
-    return ["match", ["get", "category"], ...entries, "#999"];
-  }
-
   private refreshSource(): void {
     const source = this.map.getSource(SOURCE_ID) as
       | mapboxgl.GeoJSONSource
@@ -359,22 +351,26 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       ...baseFilter,
       ["==", ["get", "visited"], false],
     ]);
-    this.map.setFilter(LAYER_VISITED, [
-      "all",
-      ...baseFilter,
-      ["==", ["get", "visited"], true],
-    ]);
+
+    if (filters.showVisited) {
+      this.map.setLayoutProperty(LAYER_VISITED, "visibility", "visible");
+      this.map.setFilter(LAYER_VISITED, [
+        "all",
+        ...baseFilter,
+        ["==", ["get", "visited"], true],
+      ]);
+    } else {
+      this.map.setLayoutProperty(LAYER_VISITED, "visibility", "none");
+    }
   }
 
   private buildMapboxFilter(filters: FilterState): mapboxgl.Expression[] {
     const conditions: mapboxgl.Expression[] = [];
-    if (filters.categories.length > 0) {
-      conditions.push([
-        "in",
-        ["get", "category"],
-        ["literal", filters.categories],
-      ]);
-    }
+    conditions.push([
+      "in",
+      ["get", "category"],
+      ["literal", filters.categories],
+    ]);
     if (filters.region) {
       conditions.push(["==", ["get", "region"], filters.region]);
     }

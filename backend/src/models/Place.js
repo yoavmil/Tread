@@ -5,7 +5,7 @@ const placeSchema = new mongoose.Schema({
   nameHe: { type: String, default: '' },
   category: {
     type: String,
-    enum: ['nature', 'historical', 'trail', 'beach', 'city'],
+    enum: ['nature', 'historical', 'trail', 'city'],
     required: true
   },
   description: { type: String, default: '' },
