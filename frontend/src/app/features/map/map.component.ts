@@ -18,7 +18,7 @@ import mapboxgl from "mapbox-gl";
 
 import { PlacesService } from "../../core/services/places.service";
 import { AuthService } from "../../core/services/auth.service";
-import { Place } from "../../models/place.model";
+import { Place, PlaceCategory, CATEGORY_LABELS } from "../../models/place.model";
 import { environment } from "../../../environments/environment";
 import {
   FilterBarComponent,
@@ -125,7 +125,11 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   loading = signal(true);
   allPlaces = signal<Place[]>([]);
   selectedPlace = signal<Place | null>(null);
-  activeFilters = signal<FilterState>({ categories: [], region: null, showVisited: true });
+  activeFilters = signal<FilterState>({
+    categories: Object.keys(CATEGORY_LABELS) as PlaceCategory[],
+    region: null,
+    showVisited: true,
+  });
   menuOpen = signal(false);
 
   visitedCount = computed(
