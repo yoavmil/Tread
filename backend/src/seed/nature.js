@@ -92,7 +92,8 @@ const nature = [
     externalUrl: 'https://www.parks.org.il/reserve-park/en-afek-nature-reserve/'
   },
   {
-    name: 'גן השלושה (הסחנה)',
+    name: 'גן השלושה',
+    aliases: ['הסחנה'],
     category: 'nature', region: 'north',
     description: '',
     coordinates: { lat: 32.4833, lng: 35.5167 },
@@ -113,7 +114,8 @@ const nature = [
     externalUrl: 'https://www.parks.org.il/reserve-park/%d7%92%d7%9f-%d7%9c%d7%90%d7%95%d7%9e%d7%99-%d7%a2%d7%99%d7%9f-%d7%a2%d7%91%d7%93%d7%aa/'
   },
   {
-    name: 'נחל עיון (התנור)',
+    name: 'נחל עיון',
+    aliases: ['התנור'],
     category: 'nature', region: 'north',
     description: '',
     coordinates: { lat: 33.2500, lng: 35.5667 },
@@ -137,7 +139,7 @@ const nature = [
     name: 'מעיין חרוד',
     category: 'nature', region: 'north',
     description: '',
-    coordinates: { lat: 32.5500, lng: 35.3833 },
+    coordinates: { lat: 32.55172992441953, lng: 35.357686906518246 },
     externalUrl: 'https://www.parks.org.il/reserve-park/%d7%92%d7%9f-%d7%9c%d7%90%d7%95%d7%9e%d7%99-%d7%9e%d7%a2%d7%99%d7%99%d7%9f-%d7%97%d7%a8%d7%95%d7%93/'
   },
   {
@@ -162,7 +164,8 @@ const nature = [
     externalUrl: 'https://www.parks.org.il/reserve-park/%d7%92%d7%9f-%d7%9c%d7%90%d7%95%d7%9e%d7%99-%d7%a0%d7%97%d7%9c-%d7%90%d7%9c%d7%9b%d7%a1%d7%a0%d7%93%d7%a8-%d7%97%d7%95%d7%a3-%d7%91%d7%99%d7%aa-%d7%99%d7%a0%d7%90%d7%99/'
   },
   {
-    name: 'עינות צוקים (עין פשחה)',
+    name: 'עינות צוקים',
+    aliases: ['עין פשחה'],
     category: 'nature', region: 'south',
     description: '',
     coordinates: { lat: 31.7333, lng: 35.4500 },

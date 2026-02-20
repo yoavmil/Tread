@@ -5,6 +5,7 @@ export type TrailDifficulty = 'easy' | 'moderate' | 'hard' | null;
 export interface Place {
   _id: string;
   name: string;
+  aliases: string[];
   category: PlaceCategory;
   description: string;
   coordinates: { lat: number; lng: number };

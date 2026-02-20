@@ -22,6 +22,7 @@ const placeSchema = new mongoose.Schema({
     enum: ['easy', 'moderate', 'hard', null],
     default: null
   },
+  aliases: [{ type: String }],
   images: [{ type: String }],
   externalUrl: { type: String, default: '' }
 }, { timestamps: true });

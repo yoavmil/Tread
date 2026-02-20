@@ -176,7 +176,8 @@ const historical = [
     externalUrl: 'https://www.parks.org.il/reserve-park/%d7%92%d7%9f-%d7%9c%d7%90%d7%95%d7%9e%d7%99-%d7%90%d7%a9%d7%a7%d7%9c%d7%95%d7%9f/'
   },
   {
-    name: 'אפולוניה (תל ארשף)',
+    name: 'אפולוניה',
+    aliases: ['תל ארשף'],
     category: 'historical', region: 'center',
     description: '',
     coordinates: { lat: 32.2000, lng: 34.8167 },

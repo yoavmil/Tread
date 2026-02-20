@@ -40,6 +40,10 @@ import { VisitsService } from '../../../core/services/visits.service';
       <div class="panel-body">
         <h2 class="place-name">{{ place.name }}</h2>
 
+        @if (place.aliases.length) {
+          <p class="aliases">נקרא גם: {{ place.aliases.join(', ') }}</p>
+        }
+
         @if (place.description) {
           <p class="description">{{ place.description }}</p>
         }
@@ -172,6 +176,12 @@ import { VisitsService } from '../../../core/services/visits.service';
       color: #1a1a1a;
       margin: 0 0 4px;
       line-height: 1.3;
+    }
+
+    .aliases {
+      font-size: 13px;
+      color: #888;
+      margin: 0 0 8px;
     }
 
     .description {
