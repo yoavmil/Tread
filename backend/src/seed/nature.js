@@ -88,8 +88,8 @@ const nature = [
     name: 'שמורת עין אפק',
     category: 'nature', region: 'north',
     description: '',
-    coordinates: { lat: 32.8811, lng: 35.1286 },
-    externalUrl: 'https://www.parks.org.il/reserve-park/en-afek-nature-reserve/'
+    coordinates: { lat: 32.8478164534709, lng: 35.11079169649081 },
+    externalUrl: 'https://www.parks.org.il/reserve-park/%D7%A9%D7%9E%D7%95%D7%A8%D7%AA-%D7%98%D7%91%D7%A2-%D7%A2%D7%99%D7%9F-%D7%90%D7%A4%D7%A7/'
   },
   {
     name: 'גן השלושה',
