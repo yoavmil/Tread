@@ -12,7 +12,7 @@ const nature = [
     category: 'nature', region: 'south',
     description: '',
     coordinates: { lat: 31.3157, lng: 35.3535 },
-    externalUrl: 'https://www.parks.org.il/reserve-park/masada-national-park/'
+    externalUrl: 'https://www.parks.org.il/reserve-park/%D7%92%D7%9F-%D7%9C%D7%90%D7%95%D7%9E%D7%99-%D7%9E%D7%A6%D7%93%D7%94/'
   },
   {
     name: 'פארק הכרמל',

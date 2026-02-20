@@ -41,14 +41,7 @@ const trails = [
     description: '',
     coordinates: { lat: 32.9820, lng: 35.4116 },
     externalUrl: 'https://www.parks.org.il/reserve-park/meron-reserve/'
-  },
-  {
-    name: 'טיול לילה למצדה',
-    category: 'trail', region: 'south', difficulty: 'moderate',
-    description: '',
-    coordinates: { lat: 31.3157, lng: 35.3535 },
-    externalUrl: 'https://www.parks.org.il/reserve-park/masada-national-park/'
-  },
+  }
 ];
 
 module.exports = trails;
