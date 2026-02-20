@@ -33,3 +33,9 @@ export const REGION_LABELS: Record<PlaceRegion, string> = {
   jerusalem: 'ירושלים',
   south: 'דרום'
 };
+
+export interface FilterState {
+  categories: PlaceCategory[];
+  region: PlaceRegion | null;
+  showVisited: boolean;
+}

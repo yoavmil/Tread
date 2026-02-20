@@ -3,15 +3,11 @@ import { CommonModule } from '@angular/common';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 
 import {
-  PlaceCategory, PlaceRegion,
-  CATEGORY_LABELS
+  PlaceCategory,
+  CATEGORY_LABELS,
+  FilterState,
 } from '../../../models/place.model';
-
-export interface FilterState {
-  categories: PlaceCategory[];
-  region: PlaceRegion | null;
-  showVisited: boolean;
-}
+import { FilterStateService } from '../../../core/services/filter-state.service';
 
 interface CategoryGroup {
   label: string;
@@ -61,10 +57,15 @@ export class FilterBarComponent implements OnInit {
   @Output() filterChange = new EventEmitter<FilterState>();
 
   groups = DISPLAY_GROUPS;
-  selectedCategories: PlaceCategory[] = (Object.keys(CATEGORY_LABELS) as PlaceCategory[]);
+  selectedCategories: PlaceCategory[] = [];
   showVisited = true;
 
+  constructor(private filterStateService: FilterStateService) {}
+
   ngOnInit(): void {
+    const saved = this.filterStateService.state();
+    this.selectedCategories = [...saved.categories];
+    this.showVisited = saved.showVisited;
     this.emitChange();
   }
 
@@ -83,10 +84,12 @@ export class FilterBarComponent implements OnInit {
   }
 
   emitChange(): void {
-    this.filterChange.emit({
+    const state: FilterState = {
       categories: this.selectedCategories,
       region: null,
       showVisited: this.showVisited,
-    });
+    };
+    this.filterStateService.set(state);
+    this.filterChange.emit(state);
   }
 }

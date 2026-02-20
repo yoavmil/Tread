@@ -18,12 +18,9 @@ import mapboxgl from "mapbox-gl";
 
 import { PlacesService } from "../../core/services/places.service";
 import { AuthService } from "../../core/services/auth.service";
-import { Place, PlaceCategory, CATEGORY_LABELS } from "../../models/place.model";
+import { Place, PlaceCategory, CATEGORY_LABELS, FilterState } from "../../models/place.model";
 import { environment } from "../../../environments/environment";
-import {
-  FilterBarComponent,
-  FilterState,
-} from "./filter-bar/filter-bar.component";
+import { FilterBarComponent } from "./filter-bar/filter-bar.component";
 import { PlacePanelComponent } from "./place-panel/place-panel.component";
 
 const LAYER_UNVISITED = "places-unvisited";
