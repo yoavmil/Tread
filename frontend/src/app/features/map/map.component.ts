@@ -22,6 +22,7 @@ import { Place, PlaceCategory, CATEGORY_LABELS, FilterState } from "../../models
 import { environment } from "../../../environments/environment";
 import { FilterBarComponent } from "./filter-bar/filter-bar.component";
 import { PlacePanelComponent } from "./place-panel/place-panel.component";
+import { SearchBarComponent } from "./search-bar/search-bar.component";
 
 const LAYER_UNVISITED = "places-unvisited";
 const LAYER_VISITED = "places-visited";
@@ -39,6 +40,7 @@ const SOURCE_ID = "places";
     MatButtonModule,
     FilterBarComponent,
     PlacePanelComponent,
+    SearchBarComponent,
   ],
   template: `
     <div class="map-page">
@@ -48,6 +50,9 @@ const SOURCE_ID = "places";
             <mat-icon>menu</mat-icon>
           </button>
           <span class="app-logo">תִּדְרֹךְ</span>
+        </div>
+        <div class="header-center">
+          <app-search-bar (placeSelected)="onSearchSelect($event)" />
         </div>
         <div class="header-right">
           <span class="visit-count">
@@ -478,6 +483,11 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onToggleVisit(): void {
     // Signal change triggers refreshSource() via effect
+  }
+
+  onSearchSelect(place: Place): void {
+    this.openPanel(place);
+    this.location.replaceState(`/map/${place._id}`);
   }
 
   onFilterChange(filters: FilterState): void {

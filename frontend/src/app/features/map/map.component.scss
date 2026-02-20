@@ -51,6 +51,13 @@
   letter-spacing: -0.5px;
 }
 
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
 .header-right {
   display: flex;
   align-items: center;

@@ -17,6 +17,24 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/places/search?q=... — fuzzy name/alias search
+router.get('/search', async (req, res) => {
+  const q = req.query.q?.trim();
+  if (!q || q.length < 2) return res.json([]);
+  const regex = new RegExp(q, 'i');
+  try {
+    const places = await Place.find({
+      $or: [{ name: regex }, { aliases: regex }],
+    })
+      .select('_id name aliases category region coordinates')
+      .limit(10)
+      .lean();
+    res.json(places);
+  } catch (err) {
+    res.status(500).json({ error: 'Search failed' });
+  }
+});
+
 // GET /api/places/:id — single place
 router.get('/:id', async (req, res) => {
   try {

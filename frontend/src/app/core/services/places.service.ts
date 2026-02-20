@@ -19,4 +19,8 @@ export class PlacesService {
   getById(id: string): Observable<Place> {
     return this.http.get<Place>(`/api/places/${id}`);
   }
+
+  search(q: string): Observable<Place[]> {
+    return this.http.get<Place[]>(`/api/places/search?q=${encodeURIComponent(q)}`);
+  }
 }
