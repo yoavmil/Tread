@@ -9,3 +9,4 @@ frontend/src/environments/environment*.ts
 !frontend/src/environments/environment.example.ts
 package-lock.json
 */package-lock.json
+backend/coverage/
