@@ -5,7 +5,7 @@ const nature = [
     category: 'nature', region: 'south',
     description: '',
     coordinates: { lat: 31.4614, lng: 35.3884 },
-    externalUrl: 'https://www.parks.org.il/reserve-park/ein-gedi-nature-reserve/'
+    externalUrl: 'https://www.parks.org.il/reserve-park/%D7%A9%D7%9E%D7%95%D7%A8%D7%AA-%D7%98%D7%91%D7%A2-%D7%A2%D7%99%D7%9F-%D7%92%D7%93%D7%99/'
   },
   {
     name: 'מצדה',
@@ -68,14 +68,14 @@ const nature = [
     category: 'nature', region: 'south',
     description: '',
     coordinates: { lat: 31.4348, lng: 35.4009 },
-    externalUrl: 'https://www.parks.org.il/reserve-park/ein-gedi-nature-reserve/'
+    externalUrl: ''
   },
   {
-    name: 'שמורת הר חרמון',
+    name: 'אתר החרמון',
     category: 'nature', region: 'north',
     description: '',
-    coordinates: { lat: 33.4170, lng: 35.8593 },
-    externalUrl: 'https://www.parks.org.il/reserve-park/mount-hermon-reserve/'
+    coordinates: { lat: 33.30889843057642, lng: 35.773922301015915 },
+    externalUrl: 'http://www.skihermon.co.il/'
   },
   {
     name: 'שמורת עמק החולה',

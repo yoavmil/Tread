@@ -1,5 +1,5 @@
 const cities = [
-  // ─── ערים ושכונות ───────────────────────────────────────────────────────────
+
   {
     name: 'יפו העתיקה',
     category: 'city', region: 'center',
@@ -50,20 +50,6 @@ const cities = [
     externalUrl: ''
   },
   {
-    name: 'פלורנטין',
-    category: 'city', region: 'center',
-    description: '',
-    coordinates: { lat: 32.0589, lng: 34.7680 },
-    externalUrl: ''
-  },
-  {
-    name: 'נחלת בנימין',
-    category: 'city', region: 'center',
-    description: '',
-    coordinates: { lat: 32.0680, lng: 34.7714 },
-    externalUrl: ''
-  },
-  {
     name: 'שוק מחנה יהודה',
     category: 'city', region: 'jerusalem',
     description: '',
@@ -89,13 +75,6 @@ const cities = [
     category: 'city', region: 'south',
     description: '',
     coordinates: { lat: 29.5581, lng: 34.9482 },
-    externalUrl: ''
-  },
-  {
-    name: 'העיר הלבנה',
-    category: 'city', region: 'center',
-    description: '',
-    coordinates: { lat: 32.0795, lng: 34.7800 },
     externalUrl: ''
   },
   {
