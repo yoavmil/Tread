@@ -1,0 +1,13 @@
+{
+  "jest.runMode": "on-demand",
+  "jest.projects": [
+    {
+      "rootPath": "backend",
+      "jestCommandLine": "npm test --"
+    },
+    {
+      "rootPath": "frontend",
+      "jestCommandLine": "npm test --"
+    }
+  ]
+}

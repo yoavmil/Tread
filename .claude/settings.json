@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(bash --version)"
+      "Bash(bash --version)",
+      "Bash(npm test:*)"
+    ],
+    "additionalDirectories": [
+      "C:\\repos\\tread"
     ]
   }
 }
