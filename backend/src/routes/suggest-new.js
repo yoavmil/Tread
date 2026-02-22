@@ -1,6 +1,6 @@
 const express = require('express');
-const { Resend } = require('resend');
 const { requireAuth } = require('../middleware/auth');
+const NewSubmission = require('../models/NewSubmission');
 const router = express.Router();
 
 // POST /api/suggest-new
@@ -11,27 +11,15 @@ router.post('/', requireAuth, async (req, res) => {
     return res.status(400).json({ error: 'Missing place payload' });
   }
 
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  const editorName = req.user.displayName || '';
-  const editorEmail = req.user.email || '';
-
   try {
-    await resend.emails.send({
-      from: 'Tread <onboarding@resend.dev>',
-      to: process.env.NOTIFY_EMAIL,
-      subject: `Tread: New location suggestion — "${place.name}"`,
-      text: [
-        `New location suggestion from: ${editorName} <${editorEmail}>`,
-        '',
-        '=== SUGGESTED PLACE ===',
-        JSON.stringify(place, null, 2),
-      ].join('\n'),
+    const submission = await NewSubmission.create({
+      placeData: place,
+      submittedBy: req.user._id,
     });
-    res.json({ ok: true });
+    res.json({ ok: true, id: submission._id });
   } catch (err) {
-    console.error('Email send error:', err.message);
-    console.dir({ place });
-    res.status(500).json({ error: 'Failed to send email' });
+    console.error('Submission save error:', err.message);
+    res.status(500).json({ error: 'Failed to save submission' });
   }
 });
 

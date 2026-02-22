@@ -2,8 +2,9 @@ const request = require('supertest');
 const { connect, disconnect, clearAll } = require('../helpers/db');
 const { createTestUser, bearerHeader } = require('../helpers/auth');
 const app = require('../../src/app');
+const NewSubmission = require('../../src/models/NewSubmission');
 
-// ── Mock Resend so tests don't make real HTTP calls ───────────────────────────
+// ── Mock Resend (still used by suggest-edit) ──────────────────────────────────
 
 const mockSend = jest.fn().mockResolvedValue({ id: 'test-email-id' });
 
@@ -85,7 +86,7 @@ describe('POST /api/suggest-new', () => {
     expect(res.status).toBe(400);
   });
 
-  test('returns 200 and sends an email with valid token and payload', async () => {
+  test('saves a NewSubmission and returns { ok, id }', async () => {
     const user = await createTestUser();
     const place = {
       name: 'מקום חדש',
@@ -101,10 +102,16 @@ describe('POST /api/suggest-new', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
-    expect(mockSend).toHaveBeenCalledTimes(1);
+    expect(res.body.id).toBeDefined();
 
-    const emailArg = mockSend.mock.calls[0][0];
-    expect(emailArg.subject).toContain('מקום חדש');
-    expect(emailArg.text).toContain(user.email);
+    // No email sent
+    expect(mockSend).not.toHaveBeenCalled();
+
+    // Document persisted correctly
+    const doc = await NewSubmission.findById(res.body.id);
+    expect(doc).not.toBeNull();
+    expect(doc.placeData.name).toBe('מקום חדש');
+    expect(doc.submittedBy.toString()).toBe(user._id.toString());
+    expect(doc.status).toBe('pending');
   });
 });
