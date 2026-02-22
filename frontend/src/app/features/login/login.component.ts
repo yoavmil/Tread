@@ -1,21 +1,23 @@
-import { Component, OnInit, OnDestroy } from "@angular/core";
-import taglines from "./taglines.json";
-import { CommonModule } from "@angular/common";
-import { MatButtonModule } from "@angular/material/button";
+import { Component } from "@angular/core";
 
 @Component({
   selector: "app-login",
   standalone: true,
-  imports: [CommonModule, MatButtonModule],
+  imports: [],
   template: `
     <div class="login-page">
       <div class="login-card">
         <div class="logo-area">
           <span class="logo-icon">🗺️</span>
-          <h1 class="app-name">תִּדְרֹךְ</h1>
-          <p class="tagline" [class.hidden]="!taglineVisible">
-            {{ currentTagline }}
-          </p>
+          <div dir="rtl">
+            <div class="phrase-context">
+              כׇּל־הַמָּק֗וֹם אֲשֶׁ֨ר
+            </div>
+            <h1 class="app-name">תִּדְרֹ֧ךְ</h1>
+            <div class="phrase-context">
+              כַּֽף־רַגְלְכֶ֛ם בּ֖וֹ לָכֶ֣ם יִהְיֶ֑ה
+            </div>
+          </div>
         </div>
 
         <div class="map-preview">
@@ -58,10 +60,6 @@ import { MatButtonModule } from "@angular/material/button";
             כניסה עם Google
           </a>
         </div>
-
-        <p class="disclaimer">
-          כניסה מהווה הסכמה לתיעוד ההרפתקאות שלך ברחבי ארץ ישראל.
-        </p>
       </div>
     </div>
   `,
@@ -106,21 +104,17 @@ import { MatButtonModule } from "@angular/material/button";
         font-size: 42px;
         font-weight: 700;
         color: #fff;
-        margin: 0 0 8px;
+        margin: 0;
         letter-spacing: -1px;
+        line-height: normal;
       }
 
-      .tagline {
-        color: rgba(255, 255, 255, 0.6);
-        font-size: 15px;
-        margin: 0;
-        min-height: 1.6em;
-        transition: opacity 0.4s ease;
-        opacity: 1;
-
-        &.hidden {
-          opacity: 0;
-        }
+      .phrase-context {
+        font-size: 20px;
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.55);
+        letter-spacing: 0.3px;
+        line-height: normal;
       }
 
       .map-preview {
@@ -185,39 +179,10 @@ import { MatButtonModule } from "@angular/material/button";
         height: 20px;
         flex-shrink: 0;
       }
-
-      .disclaimer {
-        margin-top: 20px;
-        font-size: 12px;
-        color: rgba(255, 255, 255, 0.3);
-        line-height: 1.5;
-      }
     `,
   ],
 })
-export class LoginComponent implements OnInit, OnDestroy {
-  taglines: string[] = taglines;
-
-  currentTagline = this.taglines[0];
-  taglineVisible = true;
-  private taglineIndex = 0;
-  private interval: ReturnType<typeof setInterval> | null = null;
-
-  ngOnInit(): void {
-    this.interval = setInterval(() => {
-      this.taglineVisible = false;
-      setTimeout(() => {
-        this.taglineIndex = (this.taglineIndex + 1) % this.taglines.length;
-        this.currentTagline = this.taglines[this.taglineIndex];
-        this.taglineVisible = true;
-      }, 400);
-    }, 3500);
-  }
-
-  ngOnDestroy(): void {
-    if (this.interval) clearInterval(this.interval);
-  }
-
+export class LoginComponent {
   previewDots = [
     { id: 1, x: 20, y: 30, visited: true },
     { id: 2, x: 35, y: 55, visited: true },
