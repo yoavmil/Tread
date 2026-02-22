@@ -256,6 +256,19 @@ const nature = [
       lng: 34.865464,
     },
   },
+  {
+    name: "ראש הנקרה",
+    aliases: [],
+    externalUrl: "https://www.rosh-hanikra.com/",
+    category: "nature",
+    region: "north",
+    difficulty: "easy",
+    description: "",
+    coordinates: {
+      lat: 33.093306,
+      lng: 35.104471,
+    },
+  },
 ];
 
 module.exports = nature;
