@@ -304,6 +304,34 @@ const historical = [
     externalUrl:
       "https://www.parks.org.il/reserve-park/%d7%92%d7%9f-%d7%9c%d7%90%d7%95%d7%9e%d7%99-%d7%aa%d7%9c-%d7%97%d7%a6%d7%95%d7%a7/",
   },
+  {
+    name: "סבסטיה",
+    aliases: ["שומרון"],
+    externalUrl:
+      "https://www.parks.org.il/reserve-park/%d7%a4%d7%90%d7%a8%d7%a7-%d7%92%d7%9f-%d7%9c%d7%90%d7%95%d7%9e%d7%99-%d7%a9%d7%95%d7%9e%d7%a8%d7%95%d7%9f-%d7%a1%d7%91%d7%a1%d7%98%d7%99%d7%94/",
+    category: "historical",
+    region: "judea",
+    difficulty: "easy",
+    description:
+      "עתיקות של שומרון, בירת ישראל מימי התנך, וגם של העיר סבסטיה שבנה הורדוס בימי הבית השני.",
+    coordinates: {
+      lat: 32.277092,
+      lng: 35.192313,
+    },
+  },
+  {
+    name: "הר הבית",
+    aliases: ["בית המקדש", "הר בית ה'"],
+    externalUrl: "",
+    category: "historical",
+    region: "jerusalem",
+    difficulty: null,
+    description: "לעלות רק בטהרה",
+    coordinates: {
+      lat: 31.778157,
+      lng: 35.237185,
+    },
+  },
 ];
 
 module.exports = historical;

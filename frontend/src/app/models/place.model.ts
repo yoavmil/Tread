@@ -1,5 +1,5 @@
 export type PlaceCategory = 'nature' | 'historical' | 'trail' | 'city';
-export type PlaceRegion = 'north' | 'center' | 'jerusalem' | 'south';
+export type PlaceRegion = 'north' | 'center' | 'jerusalem' | 'south' | 'judea';
 export type TrailDifficulty = 'easy' | 'moderate' | 'hard' | null;
 
 export interface Place {
@@ -32,7 +32,8 @@ export const REGION_LABELS: Record<PlaceRegion, string> = {
   north: 'צפון',
   center: 'מרכז',
   jerusalem: 'ירושלים',
-  south: 'דרום'
+  south: 'דרום',
+  judea: 'יהודה ושומרון'
 };
 
 export interface FilterState {

@@ -14,7 +14,7 @@ const placeSchema = new mongoose.Schema({
   },
   region: {
     type: String,
-    enum: ['north', 'center', 'jerusalem', 'south'],
+    enum: ['north', 'center', 'jerusalem', 'south', 'judea'],
     required: true
   },
   difficulty: {
