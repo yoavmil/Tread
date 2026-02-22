@@ -180,35 +180,14 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       error: () => this.loading.set(false),
     });
   }
-  private setHebrewLabelsAsDefault(map: mapboxgl.Map) {
-    const style = map.getStyle();
-    if (!style?.layers) return;
-
-    for (const layer of style.layers) {
-      if (layer.type !== "symbol") continue;
-
-      // only touch layers that actually have a text-field referencing name properties
-      // (skip road-shield layers that use "ref" for highway numbers)
-      const textField = (layer.layout as any)?.["text-field"];
-      if (!textField) continue;
-      if (!JSON.stringify(textField).includes('"name')) continue;
-
-      // Hebrew first, then fallback to local name, then English
-      map.setLayoutProperty(layer.id, "text-field", [
-        "coalesce",
-        ["get", "name_he"],
-        ["get", "name"],
-        ["get", "name_en"],
-      ]);
-    }
-  }
-  ngAfterViewInit(): void {
+ngAfterViewInit(): void {
     (mapboxgl as typeof mapboxgl & { accessToken: string }).accessToken =
       environment.mapboxToken;
 
     this.map = new mapboxgl.Map({
       container: this.mapEl.nativeElement,
       style: "mapbox://styles/mapbox/outdoors-v12",
+      language: "he",
       center: [35.0, 31.5],
       zoom: 7,
       minZoom: 5,
@@ -226,7 +205,6 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.map.on("load", () => {
       this.mapReady = true;
-      this.setHebrewLabelsAsDefault(this.map);
       if (this.allPlaces().length > 0) {
         this.initLayers(this.allPlaces());
       }
