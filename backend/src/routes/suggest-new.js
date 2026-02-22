@@ -3,16 +3,15 @@ const { Resend } = require('resend');
 const { requireAuth } = require('../middleware/auth');
 const router = express.Router();
 
-// POST /api/suggest-edit  (auth required — we read editor identity from req.user)
-// Body: { before: <place object>, after: <edited fields object> }
+// POST /api/suggest-new
+// Body: { place: <new place fields> }
 router.post('/', requireAuth, async (req, res) => {
-  const { before, after } = req.body;
-  if (!before || !after) {
-    return res.status(400).json({ error: 'Missing before/after payload' });
+  const { place } = req.body;
+  if (!place || !place.name) {
+    return res.status(400).json({ error: 'Missing place payload' });
   }
 
   const resend = new Resend(process.env.RESEND_API_KEY);
-  const placeName = before.name || 'Unknown';
   const editorName = req.user.displayName || '';
   const editorEmail = req.user.email || '';
 
@@ -20,22 +19,18 @@ router.post('/', requireAuth, async (req, res) => {
     await resend.emails.send({
       from: 'Tread <onboarding@resend.dev>',
       to: process.env.NOTIFY_EMAIL,
-      subject: `Tread: Edit suggestion for "${placeName}"`,
+      subject: `Tread: New location suggestion — "${place.name}"`,
       text: [
-        `Edit suggestion received for: ${placeName}`,
-        `Editor: ${editorName} <${editorEmail}>`,
+        `New location suggestion from: ${editorName} <${editorEmail}>`,
         '',
-        '=== BEFORE ===',
-        JSON.stringify(before, null, 2),
-        '',
-        '=== AFTER ===',
-        JSON.stringify(after, null, 2),
+        '=== SUGGESTED PLACE ===',
+        JSON.stringify(place, null, 2),
       ].join('\n'),
     });
     res.json({ ok: true });
   } catch (err) {
     console.error('Email send error:', err.message);
-    console.dir({ before, after });
+    console.dir({ place });
     res.status(500).json({ error: 'Failed to send email' });
   }
 });

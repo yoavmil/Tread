@@ -206,6 +206,65 @@
   }
 }
 
+// Context menu
+.ctx-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+}
+
+.ctx-menu {
+  position: absolute;
+  z-index: 41;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+  padding: 4px 0;
+  min-width: 180px;
+  animation: ctxFadeIn 0.1s ease-out;
+}
+
+@keyframes ctxFadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.ctx-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: #1a1a1a;
+  text-align: right;
+  direction: rtl;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: #1a3a2a;
+    flex-shrink: 0;
+  }
+
+  &:hover { background: #f5f5f5; }
+}
+
+// "+" button: hidden on desktop (right-click is used there), visible on mobile
+.map-ctrl-add {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .map-ctrl-add {
+    display: flex;
+  }
+}
+
 // Mobile
 @media (max-width: 768px) {
   .map-header {

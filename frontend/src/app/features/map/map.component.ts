@@ -9,7 +9,7 @@ import {
   computed,
   effect,
 } from "@angular/core";
-import { ActivatedRoute, RouterModule } from "@angular/router";
+import { ActivatedRoute, Router, RouterModule } from "@angular/router";
 import { CommonModule, Location } from "@angular/common";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatIconModule } from "@angular/material/icon";
@@ -102,6 +102,9 @@ const SOURCE_ID = "places";
           <button class="map-ctrl-btn" title="My location" (click)="goToMyLocation()">
             <mat-icon>my_location</mat-icon>
           </button>
+          <button class="map-ctrl-btn map-ctrl-add" title="הוסף מיקום חדש" (click)="openNewPlace()">
+            <mat-icon>add</mat-icon>
+          </button>
         </div>
 
         @if (selectedPlace()) {
@@ -112,6 +115,18 @@ const SOURCE_ID = "places";
             (toggleVisit)="onToggleVisit()"
             class="place-panel"
           />
+        }
+
+        @if (contextMenu()) {
+          <div class="ctx-backdrop" (click)="contextMenu.set(null)"></div>
+          <div class="ctx-menu"
+            [style.left.px]="contextMenu()!.x"
+            [style.top.px]="contextMenu()!.y">
+            <button class="ctx-item" (click)="onContextNewPlace()">
+              <mat-icon>add_location</mat-icon>
+              הצע מקום חדש כאן
+            </button>
+          </div>
         }
       </div>
     </div>
@@ -133,6 +148,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     showVisited: true,
   });
   menuOpen = signal(false);
+  contextMenu = signal<{ x: number; y: number; lat: number; lng: number } | null>(null);
 
   visitedCount = computed(
     () =>
@@ -150,6 +166,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     public auth: AuthService,
     private route: ActivatedRoute,
     private location: Location,
+    private router: Router,
   ) {
     // Refresh source data whenever visited set changes
     effect(() => {
@@ -208,6 +225,17 @@ ngAfterViewInit(): void {
       if (this.allPlaces().length > 0) {
         this.initLayers(this.allPlaces());
       }
+    });
+
+    this.map.on("contextmenu", (e) => {
+      e.preventDefault();
+      const { lat, lng } = e.lngLat;
+      const { x, y } = e.point;
+      this.contextMenu.set({
+        x, y,
+        lat: parseFloat(lat.toFixed(6)),
+        lng: parseFloat(lng.toFixed(6)),
+      });
     });
   }
 
@@ -350,8 +378,9 @@ ngAfterViewInit(): void {
       );
     }
 
-    // Click on empty map = close panel
+    // Click on empty map = close panel + context menu
     this.map.on("click", (e) => {
+      this.contextMenu.set(null);
       const features = this.map.queryRenderedFeatures(e.point, {
         layers: [LAYER_UNVISITED, LAYER_VISITED],
       });
@@ -470,6 +499,17 @@ ngAfterViewInit(): void {
 
   onFilterChange(filters: FilterState): void {
     this.activeFilters.set(filters);
+  }
+
+  onContextNewPlace(): void {
+    const menu = this.contextMenu();
+    this.contextMenu.set(null);
+    if (menu) this.openNewPlace(menu.lat, menu.lng);
+  }
+
+  openNewPlace(lat?: number, lng?: number): void {
+    const queryParams = (lat != null && lng != null) ? { lat, lng } : {};
+    this.router.navigate(['/new-place'], { queryParams });
   }
 
   ngOnDestroy(): void {

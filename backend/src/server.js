@@ -11,6 +11,7 @@ const authRoutes = require('./routes/auth');
 const placesRoutes = require('./routes/places');
 const usersRoutes = require('./routes/users');
 const suggestsRoutes = require('./routes/suggests');
+const suggestNewRoutes = require('./routes/suggest-new');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,6 +30,7 @@ app.use('/auth', authRoutes);
 app.use('/api/places', placesRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/suggest-edit', suggestsRoutes);
+app.use('/api/suggest-new', suggestNewRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 

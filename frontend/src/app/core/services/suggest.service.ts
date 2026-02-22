@@ -10,4 +10,8 @@ export class SuggestService {
   submitEdit(before: Place, after: Partial<Place>): Observable<{ ok: boolean }> {
     return this.http.post<{ ok: boolean }>('/api/suggest-edit', { before, after });
   }
+
+  submitNew(place: Record<string, unknown>): Observable<{ ok: boolean }> {
+    return this.http.post<{ ok: boolean }>('/api/suggest-new', { place });
+  }
 }

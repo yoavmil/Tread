@@ -30,6 +30,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/edit/edit-place.component').then(m => m.EditPlaceComponent),
     canActivate: [authGuard]
   },
+  {
+    path: 'new-place',
+    loadComponent: () => import('./features/edit/new-place.component').then(m => m.NewPlaceComponent),
+    canActivate: [authGuard]
+  },
   { path: '', redirectTo: '/map', pathMatch: 'full' },
   { path: '**', redirectTo: '/map' }
 ];
