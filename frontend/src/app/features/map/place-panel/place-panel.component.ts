@@ -1,5 +1,6 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
@@ -32,9 +33,14 @@ import { VisitsService } from '../../../core/services/visits.service';
             </span>
           }
         </div>
-        <button mat-icon-button class="close-btn" (click)="close.emit()">
-          <mat-icon>close</mat-icon>
-        </button>
+        <div class="header-actions">
+          <button mat-icon-button class="edit-btn" title="הצע עריכה" (click)="openEdit()">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button class="close-btn" (click)="close.emit()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
       </div>
 
       <div class="panel-body">
@@ -87,6 +93,7 @@ import { VisitsService } from '../../../core/services/visits.service';
             }
           </button>
         }
+
       </div>
     </div>
   `,
@@ -159,10 +166,14 @@ import { VisitsService } from '../../../core/services/visits.service';
     .difficulty-moderate { background: #fff3e0; color: #e65100; }
     .difficulty-hard   { background: #fce4ec; color: #c62828; }
 
-    .close-btn {
+    .header-actions {
+      display: flex;
+      align-items: center;
       flex-shrink: 0;
-      color: #999;
     }
+
+    .edit-btn { color: #bbb; }
+    .close-btn { color: #999; }
 
     .panel-body {
       padding: 8px 16px 16px;
@@ -229,6 +240,7 @@ import { VisitsService } from '../../../core/services/visits.service';
       width: 18px;
       height: 18px;
     }
+
   `]
 })
 export class PlacePanelComponent {
@@ -255,7 +267,7 @@ export class PlacePanelComponent {
     return this.place.difficulty ? DIFFICULTY_LABELS[this.place.difficulty] : '';
   }
 
-  constructor(private visits: VisitsService) {}
+  constructor(private visits: VisitsService, private router: Router) {}
 
   markVisited(): void {
     this.saving = true;
@@ -271,5 +283,9 @@ export class PlacePanelComponent {
       next: () => { this.saving = false; this.toggleVisit.emit(this.place); },
       error: () => { this.saving = false; }
     });
+  }
+
+  openEdit(): void {
+    this.router.navigate(['/edit', this.place._id]);
   }
 }

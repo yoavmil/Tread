@@ -203,7 +203,10 @@ const historical = [
     name: 'תל ערד',
     category: 'historical', region: 'south',
     description: '',
-    coordinates: { lat: 31.2833, lng: 35.1167 },
+    coordinates: {
+      lat: 31.278192059922123,
+      lng: 35.12642920548614
+    },
     externalUrl: 'https://www.parks.org.il/reserve-park/%d7%92%d7%9f-%d7%9c%d7%90%d7%95%d7%9e%d7%99-%d7%aa%d7%9c-%d7%a2%d7%a8%d7%93/'
   },
   {

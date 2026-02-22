@@ -67,8 +67,9 @@ const nature = [
     name: 'נחל ערוגות',
     category: 'nature', region: 'south',
     description: '',
-    coordinates: { lat: 31.4348, lng: 35.4009 },
-    externalUrl: ''
+    difficulty: "easy",
+    coordinates: { "lat": 31.456851504308418, "lng": 35.38368612467038 },
+    externalUrl: 'https://www.parks.org.il/reserve-park/arugot'
   },
   {
     name: 'אתר החרמון',
