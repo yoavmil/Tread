@@ -19,4 +19,11 @@ async function requireAuth(req, res, next) {
   }
 }
 
-module.exports = { requireAuth };
+function requireApprover(req, res, next) {
+  if (req.user?.role !== 'approver') {
+    return res.status(403).json({ error: 'Approver permission required' });
+  }
+  next();
+}
+
+module.exports = { requireAuth, requireApprover };

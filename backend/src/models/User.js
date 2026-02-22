@@ -5,7 +5,8 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true },
   displayName: { type: String, required: true },
   photo: { type: String, default: '' },
-  visitedPlaces: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Place' }]
+  visitedPlaces: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Place' }],
+  role: { type: String, enum: ['editor', 'approver'], default: 'approver' },
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

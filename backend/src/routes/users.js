@@ -5,8 +5,8 @@ const router = express.Router();
 
 // GET /api/users/me — current user profile
 router.get('/me', requireAuth, (req, res) => {
-  const { _id, email, displayName, photo, visitedPlaces, createdAt } = req.user;
-  res.json({ _id, email, displayName, photo, visitedPlaces, createdAt });
+  const { _id, email, displayName, photo, visitedPlaces, role, createdAt } = req.user;
+  res.json({ _id, email, displayName, photo, visitedPlaces, role, createdAt });
 });
 
 // PATCH /api/users/me — update display name
@@ -23,8 +23,8 @@ router.patch('/me', requireAuth, async (req, res) => {
   user.displayName = displayName.trim();
   await user.save();
 
-  const { _id, email, photo, visitedPlaces, createdAt } = user;
-  res.json({ _id, email, displayName: user.displayName, photo, visitedPlaces, createdAt });
+  const { _id, email, photo, visitedPlaces, role, createdAt } = user;
+  res.json({ _id, email, displayName: user.displayName, photo, visitedPlaces, role, createdAt });
 });
 
 // POST /api/users/me/visits — mark a place as visited
