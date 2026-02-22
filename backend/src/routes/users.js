@@ -9,6 +9,24 @@ router.get('/me', requireAuth, (req, res) => {
   res.json({ _id, email, displayName, photo, visitedPlaces, createdAt });
 });
 
+// PATCH /api/users/me — update display name
+router.patch('/me', requireAuth, async (req, res) => {
+  const { displayName } = req.body;
+  if (!displayName || typeof displayName !== 'string' || !displayName.trim()) {
+    return res.status(400).json({ error: 'displayName is required' });
+  }
+  if (displayName.trim().length > 50) {
+    return res.status(400).json({ error: 'displayName must be 50 characters or fewer' });
+  }
+
+  const user = req.user;
+  user.displayName = displayName.trim();
+  await user.save();
+
+  const { _id, email, photo, visitedPlaces, createdAt } = user;
+  res.json({ _id, email, displayName: user.displayName, photo, visitedPlaces, createdAt });
+});
+
 // POST /api/users/me/visits — mark a place as visited
 router.post('/me/visits', requireAuth, async (req, res) => {
   const { placeId } = req.body;

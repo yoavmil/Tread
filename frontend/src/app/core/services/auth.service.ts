@@ -30,6 +30,12 @@ export class AuthService {
     );
   }
 
+  updateDisplayName(displayName: string) {
+    return this.http.patch<User>('/api/users/me', { displayName }).pipe(
+      tap(user => this._user.set(user))
+    );
+  }
+
   markVisited(placeId: string): void {
     const user = this._user();
     if (!user) return;
