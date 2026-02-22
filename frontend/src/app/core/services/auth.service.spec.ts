@@ -125,6 +125,37 @@ describe('AuthService', () => {
     expect(() => service.unmarkVisited('p1')).not.toThrow();
   });
 
+  // ── updateDisplayName() ───────────────────────────────────────────────────
+
+  describe('updateDisplayName()', () => {
+    beforeEach(() => {
+      service.loadUser().subscribe();
+      http.expectOne('/api/users/me').flush(MOCK_USER);
+    });
+
+    it('PATCHes /api/users/me with the new display name', () => {
+      service.updateDisplayName('New Name').subscribe();
+      const req = http.expectOne('/api/users/me');
+      expect(req.request.method).toBe('PATCH');
+      expect(req.request.body).toEqual({ displayName: 'New Name' });
+      req.flush({ ...MOCK_USER, displayName: 'New Name' });
+    });
+
+    it('updates the user signal with the returned user', () => {
+      service.updateDisplayName('Updated').subscribe();
+      http.expectOne('/api/users/me').flush({ ...MOCK_USER, displayName: 'Updated' });
+      expect(service.user()!.displayName).toBe('Updated');
+    });
+
+    it('preserves other user fields after the update', () => {
+      service.updateDisplayName('Updated').subscribe();
+      http.expectOne('/api/users/me').flush({ ...MOCK_USER, displayName: 'Updated' });
+      const user = service.user()!;
+      expect(user.email).toBe(MOCK_USER.email);
+      expect(user.visitedPlaces).toEqual(MOCK_USER.visitedPlaces);
+    });
+  });
+
   // ── logout() ──────────────────────────────────────────────────────────────
 
   describe('logout()', () => {
