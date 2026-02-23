@@ -15,11 +15,11 @@ graph TD
     end
 
     subgraph Render["Render"]
-        BE["Backend\nNode.js / Express 4\n:3000"]
+        BE["Backend<br/>Node.js / Express 4<br/>:3000"]
     end
 
     subgraph Deploy["Frontend (hosting TBD)"]
-        FE["Frontend\nAngular 17\n:4200"]
+        FE["Frontend<br/>Angular 17<br/>:4200"]
     end
 
     subgraph Atlas["MongoDB Atlas"]
@@ -27,9 +27,9 @@ graph TD
     end
 
     subgraph External["External Services"]
-        Google["Google\nOAuth 2.0"]
-        Mapbox["Mapbox GL\nMap tiles"]
-        Resend["Resend\nEmail"]
+        Google["Google<br/>OAuth 2.0"]
+        Mapbox["Mapbox GL<br/>Map tiles"]
+        Resend["Resend<br/>Email"]
     end
 
     User -->|browser| FE
