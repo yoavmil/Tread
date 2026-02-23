@@ -23,6 +23,9 @@ app.use(express.json());
 app.use(passport.initialize());
 
 app.use('/auth', authRoutes);
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/auth', require('./routes/auth-test'));
+}
 app.use('/api/places', placesRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/suggest-edit', suggestsRoutes);
