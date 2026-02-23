@@ -1,4 +1,5 @@
 import { Component } from "@angular/core";
+import { environment } from "../../../environments/environment";
 
 @Component({
   selector: "app-login",
@@ -34,7 +35,7 @@ import { Component } from "@angular/core";
         </div>
 
         <div class="cta">
-          <a href="/auth/google" class="google-btn">
+          <a [href]="googleAuthUrl" class="google-btn">
             <svg
               class="google-icon"
               viewBox="0 0 24 24"
@@ -183,6 +184,7 @@ import { Component } from "@angular/core";
   ],
 })
 export class LoginComponent {
+  googleAuthUrl = `${environment.apiUrl}/auth/google`;
   previewDots = [
     { id: 1, x: 20, y: 30, visited: true },
     { id: 2, x: 35, y: 55, visited: true },
