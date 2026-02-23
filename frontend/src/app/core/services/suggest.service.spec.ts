@@ -15,6 +15,7 @@ const MOCK_PLACE: Place = {
   difficulty: null,
   images: [],
   externalUrl: '',
+  visitorsCount: 0,
 };
 
 describe('SuggestService', () => {

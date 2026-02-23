@@ -12,6 +12,7 @@ const MOCK_USER: User = {
   displayName: 'Test User',
   photo: '',
   visitedPlaces: ['p1', 'p2'],
+  role: 'editor',
   createdAt: '2024-01-01T00:00:00.000Z',
 };
 

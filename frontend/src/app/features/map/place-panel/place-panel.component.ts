@@ -60,6 +60,13 @@ import { VisitsService } from '../../../core/services/visits.service';
             Learn more
           </a>
         }
+
+        @if (!submissionId && place.visitorsCount) {
+          <p class="visitors-count">
+            <mat-icon>group</mat-icon>
+            {{ place.visitorsCount }} ביקרו כאן
+          </p>
+        }
       </div>
 
       <div class="panel-footer">
@@ -308,6 +315,16 @@ import { VisitsService } from '../../../core/services/visits.service';
       height: 18px;
     }
 
+    .visitors-count {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      color: #888;
+      margin: 12px 0 0;
+      mat-icon { font-size: 16px; width: 16px; height: 16px; }
+    }
+
   `]
 })
 export class PlacePanelComponent {
@@ -346,7 +363,10 @@ export class PlacePanelComponent {
   markVisited(): void {
     this.saving = true;
     this.visits.markVisited(this.place._id).subscribe({
-      next: () => { this.saving = false; this.toggleVisit.emit(this.place); },
+      next: (result) => {
+        this.saving = false;
+        this.toggleVisit.emit({ ...this.place, visitorsCount: result.visitorsCount });
+      },
       error: () => { this.saving = false; }
     });
   }
@@ -354,7 +374,10 @@ export class PlacePanelComponent {
   unmarkVisited(): void {
     this.saving = true;
     this.visits.unmarkVisited(this.place._id).subscribe({
-      next: () => { this.saving = false; this.toggleVisit.emit(this.place); },
+      next: (result) => {
+        this.saving = false;
+        this.toggleVisit.emit({ ...this.place, visitorsCount: result.visitorsCount });
+      },
       error: () => { this.saving = false; }
     });
   }

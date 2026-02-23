@@ -24,7 +24,9 @@ const placeSchema = new mongoose.Schema({
   },
   aliases: [{ type: String }],
   images: [{ type: String }],
-  externalUrl: { type: String, default: '' }
+  externalUrl: { type: String, default: '' },
+  visitors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  visitorsCount: { type: Number, default: 0 },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Place', placeSchema);

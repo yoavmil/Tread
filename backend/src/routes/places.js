@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
     if (req.query.category) filter.category = req.query.category;
     if (req.query.region) filter.region = req.query.region;
 
-    const places = await Place.find(filter).select('-__v').lean();
+    const places = await Place.find(filter).select('_id name category region coordinates').lean();
     res.json(places);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch places' });
@@ -38,7 +38,7 @@ router.get('/search', async (req, res) => {
 // GET /api/places/:id — single place
 router.get('/:id', async (req, res) => {
   try {
-    const place = await Place.findById(req.params.id).select('-__v').lean();
+    const place = await Place.findById(req.params.id).select('-__v -visitors').lean();
     if (!place) return res.status(404).json({ error: 'Place not found' });
     res.json(place);
   } catch (err) {

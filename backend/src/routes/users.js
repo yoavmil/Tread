@@ -1,5 +1,6 @@
 const express = require('express');
 const { requireAuth } = require('../middleware/auth');
+const Place = require('../models/Place');
 
 const router = express.Router();
 
@@ -38,17 +39,30 @@ router.post('/me/visits', requireAuth, async (req, res) => {
     await user.save();
   }
 
-  res.json({ visitedPlaces: user.visitedPlaces });
+  const updated = await Place.findOneAndUpdate(
+    { _id: placeId },
+    { $addToSet: { visitors: user._id }, $inc: { visitorsCount: 1 } },
+    { new: true, select: 'visitorsCount' }
+  ).lean();
+
+  res.json({ visitedPlaces: user.visitedPlaces, visitorsCount: updated?.visitorsCount ?? 0 });
 });
 
 // DELETE /api/users/me/visits/:placeId — unmark a visited place
 router.delete('/me/visits/:placeId', requireAuth, async (req, res) => {
+  const { placeId } = req.params;
   const user = req.user;
-  user.visitedPlaces = user.visitedPlaces.filter(
-    id => id.toString() !== req.params.placeId
-  );
+
+  user.visitedPlaces = user.visitedPlaces.filter(id => id.toString() !== placeId);
   await user.save();
-  res.json({ visitedPlaces: user.visitedPlaces });
+
+  const updated = await Place.findOneAndUpdate(
+    { _id: placeId },
+    { $pull: { visitors: user._id }, $inc: { visitorsCount: -1 } },
+    { new: true, select: 'visitorsCount' }
+  ).lean();
+
+  res.json({ visitedPlaces: user.visitedPlaces, visitorsCount: updated?.visitorsCount ?? 0 });
 });
 
 module.exports = router;

@@ -2,6 +2,14 @@ export type PlaceCategory = 'nature' | 'historical' | 'trail' | 'city';
 export type PlaceRegion = 'north' | 'center' | 'jerusalem' | 'south' | 'judea';
 export type TrailDifficulty = 'easy' | 'moderate' | 'hard' | null;
 
+export interface PlaceMarker {
+  _id: string;
+  name: string;
+  category: PlaceCategory;
+  region: PlaceRegion;
+  coordinates: { lat: number; lng: number };
+}
+
 export interface Place {
   _id: string;
   name: string;
@@ -13,6 +21,7 @@ export interface Place {
   difficulty: TrailDifficulty;
   images: string[];
   externalUrl: string;
+  visitorsCount: number;
 }
 
 export const CATEGORY_LABELS: Record<PlaceCategory, string> = {

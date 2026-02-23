@@ -13,7 +13,7 @@ import { AuthService } from "../../core/services/auth.service";
 import { PlacesService } from "../../core/services/places.service";
 import { VisitsService } from "../../core/services/visits.service";
 import {
-  Place,
+  PlaceMarker,
   PlaceCategory,
   CATEGORY_LABELS,
 } from "../../models/place.model";
@@ -453,7 +453,7 @@ import {
 })
 export class ProfileComponent implements OnInit {
   loading = signal(true);
-  allPlaces = signal<Place[]>([]);
+  allPlaces = signal<PlaceMarker[]>([]);
   editingName = signal(false);
   savingName = signal(false);
   nameInput = "";
@@ -535,7 +535,7 @@ export class ProfileComponent implements OnInit {
     return "#1a3a2a";
   }
 
-  removeVisit(place: Place): void {
+  removeVisit(place: PlaceMarker): void {
     this.visits.unmarkVisited(place._id).subscribe();
   }
 }

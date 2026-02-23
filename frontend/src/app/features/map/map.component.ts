@@ -19,7 +19,7 @@ import mapboxgl from "mapbox-gl";
 import { PlacesService } from "../../core/services/places.service";
 import { AuthService } from "../../core/services/auth.service";
 import { SubmissionsService } from "../../core/services/submissions.service";
-import { Place, PlaceCategory, CATEGORY_LABELS, FilterState } from "../../models/place.model";
+import { Place, PlaceMarker, PlaceCategory, CATEGORY_LABELS, FilterState } from "../../models/place.model";
 import { NewSubmission } from "../../models/new-submission.model";
 import { environment } from "../../../environments/environment";
 import { FilterBarComponent } from "./filter-bar/filter-bar.component";
@@ -111,12 +111,16 @@ const SOURCE_SUBMISSIONS = "submissions";
           </button>
         </div>
 
-        @if (selectedPlace()) {
+        @if (panelLoading()) {
+          <div class="place-panel place-panel--loading">
+            <mat-spinner diameter="32"></mat-spinner>
+          </div>
+        } @else if (selectedPlace()) {
           <app-place-panel
             [place]="selectedPlace()!"
             [isVisited]="isVisited(selectedPlace()!._id)"
             (close)="closePanel()"
-            (toggleVisit)="onToggleVisit()"
+            (toggleVisit)="onToggleVisit($event)"
             class="place-panel"
           />
         }
@@ -158,7 +162,8 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   private mapReady = false;
 
   loading = signal(true);
-  allPlaces = signal<Place[]>([]);
+  allPlaces = signal<PlaceMarker[]>([]);
+  panelLoading = signal(false);
   selectedPlace = signal<Place | null>(null);
   pendingSubmissions = signal<NewSubmission[]>([]);
   selectedSubmission = signal<NewSubmission | null>(null);
@@ -277,7 +282,7 @@ ngAfterViewInit(): void {
 
   // ── GeoJSON helpers ────────────────────────────────────────────────────────
 
-  private buildGeoJSON(places: Place[]): GeoJSON.FeatureCollection {
+  private buildGeoJSON(places: PlaceMarker[]): GeoJSON.FeatureCollection {
     const visitedIds = this.auth.visitedPlaceIds();
     return {
       type: "FeatureCollection",
@@ -290,7 +295,6 @@ ngAfterViewInit(): void {
         },
         properties: {
           id: p._id,
-          name: p.name,
           category: p.category,
           region: p.region,
           visited: visitedIds.has(p._id),
@@ -328,6 +332,7 @@ ngAfterViewInit(): void {
       difficulty: sub.placeData.difficulty ?? null,
       images: sub.placeData.images ?? [],
       externalUrl: sub.placeData.externalUrl ?? "",
+      visitorsCount: 0,
     };
   }
 
@@ -375,7 +380,7 @@ ngAfterViewInit(): void {
     }
   }
 
-  private initLayers(places: Place[]): void {
+  private initLayers(places: PlaceMarker[]): void {
     this.loadTrailLine();
 
     this.map.addSource(SOURCE_ID, {
@@ -590,15 +595,21 @@ ngAfterViewInit(): void {
     }
   }
 
-  openPanel(place: Place): void {
-    this.selectedPlace.set(place);
+  openPanel(marker: PlaceMarker): void {
+    this.panelLoading.set(true);
+    this.selectedPlace.set(null);
+    this.selectedSubmission.set(null);
     if (this.mapReady && this.map.getLayer(LAYER_SELECTED)) {
-      this.map.setFilter(LAYER_SELECTED, ["==", ["get", "id"], place._id]);
+      this.map.setFilter(LAYER_SELECTED, ["==", ["get", "id"], marker._id]);
     }
     this.map?.flyTo({
-      center: [place.coordinates.lng, place.coordinates.lat],
-      zoom: Math.max(this.map.getZoom(), 10),
+      center: [marker.coordinates.lng, marker.coordinates.lat],
+      zoom: Math.max(this.map?.getZoom() ?? 7, 10),
       duration: 600,
+    });
+    this.placesService.getById(marker._id).subscribe({
+      next: (place) => { this.selectedPlace.set(place); this.panelLoading.set(false); },
+      error: () => this.panelLoading.set(false),
     });
   }
 
@@ -620,7 +631,8 @@ ngAfterViewInit(): void {
     this.submissionsService.approve(sub._id).subscribe({
       next: (result) => {
         this.placesService.getById(result.placeId).subscribe((place) => {
-          this.allPlaces.update((places) => [...places, place]);
+          const marker: PlaceMarker = { _id: place._id, name: place.name, category: place.category, region: place.region, coordinates: place.coordinates };
+          this.allPlaces.update((places) => [...places, marker]);
           if (this.mapReady) this.refreshSource();
         });
         this.pendingSubmissions.update((subs) => subs.filter((s) => s._id !== sub._id));
@@ -665,13 +677,13 @@ ngAfterViewInit(): void {
     });
   }
 
-  onToggleVisit(): void {
-    // Signal change triggers refreshSource() via effect
+  onToggleVisit(updatedPlace: Place): void {
+    this.selectedPlace.set(updatedPlace);
   }
 
-  onSearchSelect(place: Place): void {
-    this.openPanel(place);
-    this.location.replaceState(`/map/${place._id}`);
+  onSearchSelect(marker: PlaceMarker): void {
+    this.openPanel(marker);
+    this.location.replaceState(`/map/${marker._id}`);
   }
 
   onFilterChange(filters: FilterState): void {
