@@ -8,6 +8,7 @@ import {
   FilterState,
 } from '../../../models/place.model';
 import { FilterStateService } from '../../../core/services/filter-state.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 interface CategoryGroup {
   label: string;
@@ -38,6 +39,12 @@ const DISPLAY_GROUPS: CategoryGroup[] = [
         [checked]="showVisited"
         (change)="showVisited = !showVisited; emitChange()"
       >ביקרתי</mat-checkbox>
+      @if (auth.user()?.role === 'approver') {
+        <mat-checkbox
+          [checked]="showPendingSubmissions"
+          (change)="showPendingSubmissions = !showPendingSubmissions; emitChange()"
+        >מקומות חדשים</mat-checkbox>
+      }
     </div>
   `,
   styles: [`
@@ -59,13 +66,18 @@ export class FilterBarComponent implements OnInit {
   groups = DISPLAY_GROUPS;
   selectedCategories: PlaceCategory[] = [];
   showVisited = true;
+  showPendingSubmissions = false;
 
-  constructor(private filterStateService: FilterStateService) {}
+  constructor(
+    private filterStateService: FilterStateService,
+    public auth: AuthService,
+  ) {}
 
   ngOnInit(): void {
     const saved = this.filterStateService.state();
     this.selectedCategories = [...saved.categories];
     this.showVisited = saved.showVisited;
+    this.showPendingSubmissions = saved.showPendingSubmissions;
     this.emitChange();
   }
 
@@ -88,6 +100,7 @@ export class FilterBarComponent implements OnInit {
       categories: this.selectedCategories,
       region: null,
       showVisited: this.showVisited,
+      showPendingSubmissions: this.showPendingSubmissions,
     };
     this.filterStateService.set(state);
     this.filterChange.emit(state);

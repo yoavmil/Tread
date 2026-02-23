@@ -35,6 +35,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/edit/new-place.component').then(m => m.NewPlaceComponent),
     canActivate: [authGuard]
   },
+  {
+    path: 'edit-submission/:submissionId',
+    loadComponent: () => import('./features/edit/edit-submission.component').then(m => m.EditSubmissionComponent),
+    canActivate: [authGuard]
+  },
   { path: '', redirectTo: '/map', pathMatch: 'full' },
   { path: '**', redirectTo: '/map' }
 ];

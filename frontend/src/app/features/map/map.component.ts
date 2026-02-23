@@ -18,7 +18,9 @@ import mapboxgl from "mapbox-gl";
 
 import { PlacesService } from "../../core/services/places.service";
 import { AuthService } from "../../core/services/auth.service";
+import { SubmissionsService } from "../../core/services/submissions.service";
 import { Place, PlaceCategory, CATEGORY_LABELS, FilterState } from "../../models/place.model";
+import { NewSubmission } from "../../models/new-submission.model";
 import { environment } from "../../../environments/environment";
 import { FilterBarComponent } from "./filter-bar/filter-bar.component";
 import { PlacePanelComponent } from "./place-panel/place-panel.component";
@@ -27,7 +29,9 @@ import { SearchBarComponent } from "./search-bar/search-bar.component";
 const LAYER_UNVISITED = "places-unvisited";
 const LAYER_VISITED = "places-visited";
 const LAYER_SELECTED = "places-selected";
+const LAYER_SUBMISSIONS = "places-submissions";
 const SOURCE_ID = "places";
+const SOURCE_SUBMISSIONS = "submissions";
 
 @Component({
   selector: "app-map",
@@ -117,6 +121,20 @@ const SOURCE_ID = "places";
           />
         }
 
+        @if (selectedSubmission()) {
+          <app-place-panel
+            [place]="submissionAsPlace(selectedSubmission()!)"
+            [isVisited]="false"
+            [submissionId]="selectedSubmission()!._id"
+            [isApprover]="auth.user()?.role === 'approver'"
+            [submittedByName]="selectedSubmission()!.submittedBy?.displayName"
+            (close)="closeSubmissionPanel()"
+            (approve)="onApproveSubmission()"
+            (decline)="onDeclineSubmission()"
+            class="place-panel"
+          />
+        }
+
         @if (contextMenu()) {
           <div class="ctx-backdrop" (click)="contextMenu.set(null)"></div>
           <div class="ctx-menu"
@@ -142,10 +160,13 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   loading = signal(true);
   allPlaces = signal<Place[]>([]);
   selectedPlace = signal<Place | null>(null);
+  pendingSubmissions = signal<NewSubmission[]>([]);
+  selectedSubmission = signal<NewSubmission | null>(null);
   activeFilters = signal<FilterState>({
     categories: Object.keys(CATEGORY_LABELS) as PlaceCategory[],
     region: null,
     showVisited: true,
+    showPendingSubmissions: false,
   });
   menuOpen = signal(false);
   contextMenu = signal<{ x: number; y: number; lat: number; lng: number } | null>(null);
@@ -163,6 +184,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(
     private placesService: PlacesService,
+    private submissionsService: SubmissionsService,
     public auth: AuthService,
     private route: ActivatedRoute,
     private location: Location,
@@ -178,6 +200,17 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     effect(() => {
       const filters = this.activeFilters();
       if (this.mapReady) this.applyLayerFilters(filters);
+    });
+
+    // Show/hide submissions layer based on filter
+    effect(() => {
+      const show = this.activeFilters().showPendingSubmissions;
+      if (!this.mapReady) return;
+      if (show) {
+        this.fetchAndShowSubmissions();
+      } else {
+        this.hideSubmissionsLayer();
+      }
     });
   }
 
@@ -225,6 +258,9 @@ ngAfterViewInit(): void {
       if (this.allPlaces().length > 0) {
         this.initLayers(this.allPlaces());
       }
+      if (this.activeFilters().showPendingSubmissions) {
+        this.fetchAndShowSubmissions();
+      }
     });
 
     this.map.on("contextmenu", (e) => {
@@ -260,6 +296,38 @@ ngAfterViewInit(): void {
           visited: visitedIds.has(p._id),
         },
       })),
+    };
+  }
+
+  private buildSubmissionsGeoJSON(submissions: NewSubmission[]): GeoJSON.FeatureCollection {
+    return {
+      type: "FeatureCollection",
+      features: submissions
+        .filter((s) => s.placeData.coordinates)
+        .map((s) => ({
+          type: "Feature",
+          id: s._id,
+          geometry: {
+            type: "Point",
+            coordinates: [s.placeData.coordinates!.lng, s.placeData.coordinates!.lat],
+          },
+          properties: { id: s._id, name: s.placeData.name },
+        })),
+    };
+  }
+
+  submissionAsPlace(sub: NewSubmission): Place {
+    return {
+      _id: sub._id,
+      name: sub.placeData.name,
+      category: sub.placeData.category ?? "nature",
+      region: sub.placeData.region ?? "north",
+      coordinates: sub.placeData.coordinates ?? { lat: 31.5, lng: 35.0 },
+      aliases: sub.placeData.aliases ?? [],
+      description: sub.placeData.description ?? "",
+      difficulty: sub.placeData.difficulty ?? null,
+      images: sub.placeData.images ?? [],
+      externalUrl: sub.placeData.externalUrl ?? "",
     };
   }
 
@@ -381,10 +449,13 @@ ngAfterViewInit(): void {
     // Click on empty map = close panel + context menu
     this.map.on("click", (e) => {
       this.contextMenu.set(null);
-      const features = this.map.queryRenderedFeatures(e.point, {
-        layers: [LAYER_UNVISITED, LAYER_VISITED],
-      });
-      if (!features.length) this.closePanel();
+      const layers: string[] = [LAYER_UNVISITED, LAYER_VISITED];
+      if (this.map.getLayer(LAYER_SUBMISSIONS)) layers.push(LAYER_SUBMISSIONS);
+      const features = this.map.queryRenderedFeatures(e.point, { layers });
+      if (!features.length) {
+        this.closePanel();
+        this.closeSubmissionPanel();
+      }
     });
 
     // Apply any filters that were set before map loaded
@@ -421,6 +492,56 @@ ngAfterViewInit(): void {
     }
   }
 
+  private initSubmissionsLayer(): void {
+    if (this.map.getSource(SOURCE_SUBMISSIONS)) return;
+
+    this.map.addSource(SOURCE_SUBMISSIONS, {
+      type: "geojson",
+      data: this.buildSubmissionsGeoJSON(this.pendingSubmissions()),
+    });
+
+    this.map.addLayer({
+      id: LAYER_SUBMISSIONS,
+      type: "circle",
+      source: SOURCE_SUBMISSIONS,
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 5, 12, 9],
+        "circle-color": "#7C3AED",
+        "circle-stroke-width": 1.5,
+        "circle-stroke-color": "#fff",
+        "circle-opacity": 0.9,
+      },
+    });
+
+    this.map.on("click", LAYER_SUBMISSIONS, (e) => this.onSubmissionClick(e));
+    this.map.on("mouseenter", LAYER_SUBMISSIONS, () => (this.map.getCanvas().style.cursor = "pointer"));
+    this.map.on("mouseleave", LAYER_SUBMISSIONS, () => (this.map.getCanvas().style.cursor = ""));
+  }
+
+  private refreshSubmissionsSource(): void {
+    const source = this.map.getSource(SOURCE_SUBMISSIONS) as mapboxgl.GeoJSONSource | undefined;
+    source?.setData(this.buildSubmissionsGeoJSON(this.pendingSubmissions()));
+  }
+
+  private fetchAndShowSubmissions(): void {
+    this.submissionsService.getPending().subscribe((subs) => {
+      this.pendingSubmissions.set(subs);
+      this.initSubmissionsLayer();
+      if (this.map.getLayer(LAYER_SUBMISSIONS)) {
+        this.map.setLayoutProperty(LAYER_SUBMISSIONS, "visibility", "visible");
+      }
+      this.refreshSubmissionsSource();
+    });
+  }
+
+  private hideSubmissionsLayer(): void {
+    if (this.map.getLayer(LAYER_SUBMISSIONS)) {
+      this.map.setLayoutProperty(LAYER_SUBMISSIONS, "visibility", "none");
+    }
+    this.pendingSubmissions.set([]);
+    this.selectedSubmission.set(null);
+  }
+
   private buildMapboxFilter(filters: FilterState): mapboxgl.Expression[] {
     const conditions: mapboxgl.Expression[] = [];
     conditions.push([
@@ -442,8 +563,30 @@ ngAfterViewInit(): void {
     if (!props) return;
     const place = this.allPlaces().find((p) => p._id === props["id"]);
     if (place) {
+      this.selectedSubmission.set(null);
       this.openPanel(place);
       this.location.replaceState(`/map/${place._id}`);
+    }
+  }
+
+  private onSubmissionClick(e: mapboxgl.MapLayerMouseEvent): void {
+    e.originalEvent.stopPropagation();
+    const props = e.features?.[0]?.properties;
+    if (!props) return;
+    const sub = this.pendingSubmissions().find((s) => s._id === props["id"]);
+    if (sub) {
+      this.selectedSubmission.set(sub);
+      this.selectedPlace.set(null);
+      if (this.mapReady && this.map.getLayer(LAYER_SELECTED)) {
+        this.map.setFilter(LAYER_SELECTED, ["==", ["get", "id"], ""]);
+      }
+      if (sub.placeData.coordinates) {
+        this.map.flyTo({
+          center: [sub.placeData.coordinates.lng, sub.placeData.coordinates.lat],
+          zoom: Math.max(this.map.getZoom(), 10),
+          duration: 600,
+        });
+      }
     }
   }
 
@@ -465,6 +608,40 @@ ngAfterViewInit(): void {
       this.map.setFilter(LAYER_SELECTED, ["==", ["get", "id"], ""]);
     }
     this.location.replaceState("/map");
+  }
+
+  closeSubmissionPanel(): void {
+    this.selectedSubmission.set(null);
+  }
+
+  onApproveSubmission(): void {
+    const sub = this.selectedSubmission();
+    if (!sub) return;
+    this.submissionsService.approve(sub._id).subscribe({
+      next: (result) => {
+        this.placesService.getById(result.placeId).subscribe((place) => {
+          this.allPlaces.update((places) => [...places, place]);
+          if (this.mapReady) this.refreshSource();
+        });
+        this.pendingSubmissions.update((subs) => subs.filter((s) => s._id !== sub._id));
+        if (this.mapReady) this.refreshSubmissionsSource();
+        this.closeSubmissionPanel();
+      },
+      error: () => {},
+    });
+  }
+
+  onDeclineSubmission(): void {
+    const sub = this.selectedSubmission();
+    if (!sub) return;
+    this.submissionsService.decline(sub._id).subscribe({
+      next: () => {
+        this.pendingSubmissions.update((subs) => subs.filter((s) => s._id !== sub._id));
+        if (this.mapReady) this.refreshSubmissionsSource();
+        this.closeSubmissionPanel();
+      },
+      error: () => {},
+    });
   }
 
   fitIsrael(): void {
