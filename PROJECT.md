@@ -4,15 +4,55 @@
 
 ---
 
+## Architecture
+
+```mermaid
+graph TD
+    User((User))
+
+    subgraph Registrar["domains.box.co.il"]
+        Domain["www.tread.co.il"]
+    end
+
+    subgraph Render["Render"]
+        BE["Backend\nNode.js / Express 4\n:3000"]
+    end
+
+    subgraph Deploy["Frontend (hosting TBD)"]
+        FE["Frontend\nAngular 17\n:4200"]
+    end
+
+    subgraph Atlas["MongoDB Atlas"]
+        DB[("TreadCluster")]
+    end
+
+    subgraph External["External Services"]
+        Google["Google\nOAuth 2.0"]
+        Mapbox["Mapbox GL\nMap tiles"]
+        Resend["Resend\nEmail"]
+    end
+
+    User -->|browser| FE
+    Domain -.->|"DNS — not yet wired"| FE
+    Domain -.->|"DNS — not yet wired"| BE
+    FE -->|"/api, /auth proxy"| BE
+    FE -->|"map tiles + SDK"| Mapbox
+    FE -->|"OAuth redirect"| Google
+    BE -->|"Mongoose / MONGO_URI"| DB
+    BE -->|"Passport"| Google
+    BE -->|"RESEND_API_KEY"| Resend
+```
+
+---
+
 ## Domain & Hosting
 
 | | |
 |---|---|
 | **Domain** | `www.tread.co.il` |
 | **Registrar** | domains.box.co.il |
-| **Deployment** | Not yet set up — no Docker, no CI/CD |
-
-Production `frontend/src/environments/environment.prod.ts` still has a placeholder backend URL — needs updating before any deployment.
+| **Deployment** | Render — https://dashboard.render.com/web/srv-d6e349ctgctc73cjl2b0 |
+| **Render outbound IPs** | `74.220.48.0/24`, `74.220.56.0/24` (whitelist in MongoDB Atlas → Network Access) |
 
 ---
 
@@ -47,7 +87,7 @@ Production `frontend/src/environments/environment.prod.ts` still has a placehold
 | **Google Cloud Console** | OAuth 2.0 login | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in `backend/.env` |
 | **Mapbox** | Interactive map | Token hardcoded in `frontend/src/environments/environment.ts` |
 | **Resend** | Email notifications for place suggestions | `RESEND_API_KEY` in `backend/.env` |
-| **MongoDB Atlas** | Production database | `MONGO_URI` in `backend/.env` |
+| **MongoDB Atlas** | Production database — https://cloud.mongodb.com/v2/699c1a758df98bd8630a50b3#/clusters/detail/TreadCluster | `MONGO_URI` in `backend/.env` |
 | **domains.box.co.il** | Domain registrar for tread.co.il | External account |
 
 ---
@@ -121,9 +161,9 @@ Run from the **repo root** unless noted.
 
 ## TODO
 
-- [ ] **Deployment** — decide on hosting (e.g. Render, Railway, VPS) and set up backend + frontend deployment
+- [ ] **Deployment** — Render is set up for backend; complete frontend deployment and wire up the domain
 - [ ] **DNS** — point `www.tread.co.il` to the hosted backend/frontend once deployed
-- [ ] **Production env** — fill in `environment.prod.ts` with real backend URL, add prod Mapbox token
+- [x] **Production env** — `environment.prod.ts` points to `https://treadbe.onrender.com`; Mapbox token committed
 - [ ] **Create `.env.example`** in `backend/` so setup is documented in code
 - [ ] **Replace Mapbox?** — evaluate alternatives (e.g. MapLibre + free tile provider, Google Maps) to avoid token/cost dependency
 - [ ] **E2E tests** — Playwright setup planned but not yet implemented
