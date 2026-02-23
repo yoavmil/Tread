@@ -7,13 +7,17 @@ const EDITOR = {
   role: 'editor' as const,
 };
 
+// The + button is only visible on mobile (display:none on desktop via CSS).
+// Use a mobile viewport so the button is actually rendered and clickable.
+test.use({ viewport: { width: 390, height: 844 } });
+
 test.describe('Editor — submit new location', () => {
   test('editor can log in and submit a new location via the form', async ({ page, request }) => {
     // ── 1. Login ────────────────────────────────────────────────────────────
     await loginAs(page, request, EDITOR);
     await expect(page).toHaveURL(/\/map/);
 
-    // ── 2. Open the new-place form via the + button ─────────────────────────
+    // ── 2. Open the new-place form via the + button (mobile-visible) ─────────
     await page.locator('button[title="הוסף מיקום חדש"]').click();
     await page.waitForURL(/\/new-place/, { timeout: 5_000 });
 
