@@ -8,6 +8,7 @@ export class FilterStateService {
     region: null,
     showVisited: true,
     showPendingSubmissions: false,
+    showPendingEdits: false,
   });
 
   set(fs: FilterState): void {

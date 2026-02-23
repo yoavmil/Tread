@@ -21,17 +21,21 @@ import { AuthService } from "../../core/services/auth.service";
 import { SubmissionsService } from "../../core/services/submissions.service";
 import { Place, PlaceMarker, PlaceCategory, CATEGORY_LABELS, FilterState } from "../../models/place.model";
 import { NewSubmission } from "../../models/new-submission.model";
+import { EditSubmissionSummary, EditSubmission } from "../../models/edit-submission.model";
 import { environment } from "../../../environments/environment";
 import { FilterBarComponent } from "./filter-bar/filter-bar.component";
 import { PlacePanelComponent } from "./place-panel/place-panel.component";
 import { SearchBarComponent } from "./search-bar/search-bar.component";
+import { EditReviewPanelComponent } from "./edit-review-panel/edit-review-panel.component";
 
 const LAYER_UNVISITED = "places-unvisited";
 const LAYER_VISITED = "places-visited";
 const LAYER_SELECTED = "places-selected";
 const LAYER_SUBMISSIONS = "places-submissions";
+const LAYER_EDITS = "places-edits";
 const SOURCE_ID = "places";
 const SOURCE_SUBMISSIONS = "submissions";
+const SOURCE_EDITS = "edits";
 
 @Component({
   selector: "app-map",
@@ -45,6 +49,7 @@ const SOURCE_SUBMISSIONS = "submissions";
     FilterBarComponent,
     PlacePanelComponent,
     SearchBarComponent,
+    EditReviewPanelComponent,
   ],
   template: `
     <div class="map-page">
@@ -86,7 +91,11 @@ const SOURCE_SUBMISSIONS = "submissions";
               <span class="active-count">({{ activeFilters().categories.length }} active)</span>
             }
           </span>
-          <app-filter-bar (filterChange)="onFilterChange($event)" />
+          <app-filter-bar
+            [pendingEditsCount]="pendingEditsCount()"
+            (filterChange)="onFilterChange($event)"
+            (pendingEditsEnabled)="menuOpen.set(false)"
+          />
         </div>
       }
 
@@ -139,6 +148,24 @@ const SOURCE_SUBMISSIONS = "submissions";
           />
         }
 
+        @if (editDetailLoading()) {
+          <div class="edit-review-panel edit-review-panel--loading">
+            <mat-spinner diameter="32"></mat-spinner>
+          </div>
+        } @else if (selectedEditDetail()) {
+          <app-edit-review-panel
+            [detail]="selectedEditDetail()!"
+            [currentIndex]="selectedEditIdx()"
+            [totalCount]="pendingEdits().length"
+            (close)="closeEditPanel()"
+            (approve)="onApproveEdit()"
+            (decline)="onDeclineEdit()"
+            (next)="onNextEdit()"
+            (prev)="onPrevEdit()"
+            class="edit-review-panel"
+          />
+        }
+
         @if (contextMenu()) {
           <div class="ctx-backdrop" (click)="contextMenu.set(null)"></div>
           <div class="ctx-menu"
@@ -167,11 +194,17 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   selectedPlace = signal<Place | null>(null);
   pendingSubmissions = signal<NewSubmission[]>([]);
   selectedSubmission = signal<NewSubmission | null>(null);
+  pendingEdits = signal<EditSubmissionSummary[]>([]);
+  pendingEditsCount = signal(0);
+  selectedEditIdx = signal(-1);
+  selectedEditDetail = signal<EditSubmission | null>(null);
+  editDetailLoading = signal(false);
   activeFilters = signal<FilterState>({
     categories: Object.keys(CATEGORY_LABELS) as PlaceCategory[],
     region: null,
     showVisited: true,
     showPendingSubmissions: false,
+    showPendingEdits: false,
   });
   menuOpen = signal(false);
   contextMenu = signal<{ x: number; y: number; lat: number; lng: number } | null>(null);
@@ -217,6 +250,17 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
         this.hideSubmissionsLayer();
       }
     });
+
+    // Show/hide edits layer based on filter
+    effect(() => {
+      const show = this.activeFilters().showPendingEdits;
+      if (!this.mapReady) return;
+      if (show) {
+        this.fetchAndShowEdits();
+      } else {
+        this.hideEditsLayer();
+      }
+    });
   }
 
   ngOnInit(): void {
@@ -234,8 +278,15 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       },
       error: () => this.loading.set(false),
     });
+
+    // Pre-fetch pending edits count for the badge
+    if (this.auth.user()?.role === 'approver') {
+      this.submissionsService.getPendingEdits().subscribe(edits =>
+        this.pendingEditsCount.set(edits.length));
+    }
   }
-ngAfterViewInit(): void {
+
+  ngAfterViewInit(): void {
     (mapboxgl as typeof mapboxgl & { accessToken: string }).accessToken =
       environment.mapboxToken;
 
@@ -265,6 +316,9 @@ ngAfterViewInit(): void {
       }
       if (this.activeFilters().showPendingSubmissions) {
         this.fetchAndShowSubmissions();
+      }
+      if (this.activeFilters().showPendingEdits) {
+        this.fetchAndShowEdits();
       }
     });
 
@@ -320,6 +374,24 @@ ngAfterViewInit(): void {
     };
   }
 
+  private buildEditsGeoJSON(edits: EditSubmissionSummary[]): GeoJSON.FeatureCollection {
+    const features: GeoJSON.Feature[] = [];
+    edits.forEach((ed, idx) => {
+      const place = this.allPlaces().find(p => p._id === ed.placeId._id);
+      if (!place) return;
+      features.push({
+        type: "Feature",
+        id: ed._id,
+        geometry: {
+          type: "Point",
+          coordinates: [place.coordinates.lng, place.coordinates.lat],
+        },
+        properties: { id: ed._id, idx },
+      });
+    });
+    return { type: "FeatureCollection", features };
+  }
+
   submissionAsPlace(sub: NewSubmission): Place {
     return {
       _id: sub._id,
@@ -373,7 +445,7 @@ ngAfterViewInit(): void {
             'line-opacity': 0.9,
           },
         },
-        LAYER_UNVISITED, // insert below markers
+        LAYER_UNVISITED,
       );
     } catch {
       // trail line is decorative — ignore errors
@@ -451,15 +523,17 @@ ngAfterViewInit(): void {
       );
     }
 
-    // Click on empty map = close panel + context menu
+    // Click on empty map = close panels + context menu
     this.map.on("click", (e) => {
       this.contextMenu.set(null);
       const layers: string[] = [LAYER_UNVISITED, LAYER_VISITED];
       if (this.map.getLayer(LAYER_SUBMISSIONS)) layers.push(LAYER_SUBMISSIONS);
+      if (this.map.getLayer(LAYER_EDITS)) layers.push(LAYER_EDITS);
       const features = this.map.queryRenderedFeatures(e.point, { layers });
       if (!features.length) {
         this.closePanel();
         this.closeSubmissionPanel();
+        this.closeEditPanel();
       }
     });
 
@@ -547,6 +621,61 @@ ngAfterViewInit(): void {
     this.selectedSubmission.set(null);
   }
 
+  private initEditsLayer(): void {
+    if (this.map.getSource(SOURCE_EDITS)) return;
+
+    this.map.addSource(SOURCE_EDITS, {
+      type: "geojson",
+      data: this.buildEditsGeoJSON(this.pendingEdits()),
+    });
+
+    this.map.addLayer({
+      id: LAYER_EDITS,
+      type: "circle",
+      source: SOURCE_EDITS,
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 6, 12, 10],
+        "circle-color": "#F59E0B",
+        "circle-stroke-width": 2,
+        "circle-stroke-color": "#fff",
+        "circle-opacity": 0.95,
+      },
+    });
+
+    this.map.on("click", LAYER_EDITS, (e) => this.onEditMarkerClick(e));
+    this.map.on("mouseenter", LAYER_EDITS, () => (this.map.getCanvas().style.cursor = "pointer"));
+    this.map.on("mouseleave", LAYER_EDITS, () => (this.map.getCanvas().style.cursor = ""));
+  }
+
+  private refreshEditsSource(): void {
+    const source = this.map.getSource(SOURCE_EDITS) as mapboxgl.GeoJSONSource | undefined;
+    source?.setData(this.buildEditsGeoJSON(this.pendingEdits()));
+  }
+
+  private fetchAndShowEdits(): void {
+    this.submissionsService.getPendingEdits().subscribe((edits) => {
+      this.pendingEdits.set(edits);
+      this.pendingEditsCount.set(edits.length);
+      this.initEditsLayer();
+      if (this.map.getLayer(LAYER_EDITS)) {
+        this.map.setLayoutProperty(LAYER_EDITS, "visibility", "visible");
+      }
+      this.refreshEditsSource();
+      if (edits.length > 0) {
+        this.openEditByIndex(0);
+      }
+    });
+  }
+
+  private hideEditsLayer(): void {
+    if (this.map.getLayer(LAYER_EDITS)) {
+      this.map.setLayoutProperty(LAYER_EDITS, "visibility", "none");
+    }
+    this.pendingEdits.set([]);
+    this.selectedEditDetail.set(null);
+    this.selectedEditIdx.set(-1);
+  }
+
   private buildMapboxFilter(filters: FilterState): mapboxgl.Expression[] {
     const conditions: mapboxgl.Expression[] = [];
     conditions.push([
@@ -569,6 +698,8 @@ ngAfterViewInit(): void {
     const place = this.allPlaces().find((p) => p._id === props["id"]);
     if (place) {
       this.selectedSubmission.set(null);
+      this.selectedEditDetail.set(null);
+      this.selectedEditIdx.set(-1);
       this.openPanel(place);
       this.location.replaceState(`/map/${place._id}`);
     }
@@ -582,6 +713,8 @@ ngAfterViewInit(): void {
     if (sub) {
       this.selectedSubmission.set(sub);
       this.selectedPlace.set(null);
+      this.selectedEditDetail.set(null);
+      this.selectedEditIdx.set(-1);
       if (this.mapReady && this.map.getLayer(LAYER_SELECTED)) {
         this.map.setFilter(LAYER_SELECTED, ["==", ["get", "id"], ""]);
       }
@@ -593,6 +726,40 @@ ngAfterViewInit(): void {
         });
       }
     }
+  }
+
+  private onEditMarkerClick(e: mapboxgl.MapLayerMouseEvent): void {
+    e.originalEvent.stopPropagation();
+    const props = e.features?.[0]?.properties;
+    if (!props) return;
+    const idx = this.pendingEdits().findIndex(ed => ed._id === props["id"]);
+    if (idx >= 0) this.openEditByIndex(idx);
+  }
+
+  openEditByIndex(idx: number): void {
+    const edits = this.pendingEdits();
+    if (idx < 0 || idx >= edits.length) return;
+    const summary = edits[idx];
+    this.selectedEditIdx.set(idx);
+    this.selectedEditDetail.set(null);
+    this.editDetailLoading.set(true);
+    this.selectedPlace.set(null);
+    this.selectedSubmission.set(null);
+    if (this.mapReady && this.map.getLayer(LAYER_SELECTED)) {
+      this.map.setFilter(LAYER_SELECTED, ["==", ["get", "id"], ""]);
+    }
+    const place = this.allPlaces().find(p => p._id === summary.placeId._id);
+    if (place) {
+      this.map?.flyTo({
+        center: [place.coordinates.lng, place.coordinates.lat],
+        zoom: Math.max(this.map?.getZoom() ?? 7, 10),
+        duration: 600,
+      });
+    }
+    this.submissionsService.getEditById(summary._id).subscribe({
+      next: (detail) => { this.selectedEditDetail.set(detail); this.editDetailLoading.set(false); },
+      error: () => this.editDetailLoading.set(false),
+    });
   }
 
   openPanel(marker: PlaceMarker): void {
@@ -625,6 +792,11 @@ ngAfterViewInit(): void {
     this.selectedSubmission.set(null);
   }
 
+  closeEditPanel(): void {
+    this.selectedEditDetail.set(null);
+    this.selectedEditIdx.set(-1);
+  }
+
   onApproveSubmission(): void {
     const sub = this.selectedSubmission();
     if (!sub) return;
@@ -654,6 +826,56 @@ ngAfterViewInit(): void {
       },
       error: () => {},
     });
+  }
+
+  onApproveEdit(): void {
+    const detail = this.selectedEditDetail();
+    if (!detail) return;
+    this.submissionsService.approveEdit(detail._id).subscribe({
+      next: () => {
+        const idx = this.selectedEditIdx();
+        this.pendingEdits.update(edits => edits.filter(e => e._id !== detail._id));
+        this.pendingEditsCount.set(this.pendingEdits().length);
+        if (this.mapReady) this.refreshEditsSource();
+        const newLength = this.pendingEdits().length;
+        if (newLength === 0) {
+          this.closeEditPanel();
+        } else {
+          this.openEditByIndex(Math.min(idx, newLength - 1));
+        }
+      },
+      error: () => {},
+    });
+  }
+
+  onDeclineEdit(): void {
+    const detail = this.selectedEditDetail();
+    if (!detail) return;
+    this.submissionsService.declineEdit(detail._id).subscribe({
+      next: () => {
+        const idx = this.selectedEditIdx();
+        this.pendingEdits.update(edits => edits.filter(e => e._id !== detail._id));
+        this.pendingEditsCount.set(this.pendingEdits().length);
+        if (this.mapReady) this.refreshEditsSource();
+        const newLength = this.pendingEdits().length;
+        if (newLength === 0) {
+          this.closeEditPanel();
+        } else {
+          this.openEditByIndex(Math.min(idx, newLength - 1));
+        }
+      },
+      error: () => {},
+    });
+  }
+
+  onNextEdit(): void {
+    const idx = this.selectedEditIdx();
+    if (idx < this.pendingEdits().length - 1) this.openEditByIndex(idx + 1);
+  }
+
+  onPrevEdit(): void {
+    const idx = this.selectedEditIdx();
+    if (idx > 0) this.openEditByIndex(idx - 1);
   }
 
   fitIsrael(): void {

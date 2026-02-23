@@ -264,6 +264,26 @@
   &:hover { background: #f5f5f5; }
 }
 
+.edit-review-panel {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 50;
+  width: 520px;
+  max-height: calc(100% - 32px);
+  overflow-y: auto;
+
+  &--loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.15);
+    height: 120px;
+  }
+}
+
 // "+" button: hidden on desktop (right-click is used there), visible on mobile
 .map-ctrl-add {
   display: none;
@@ -303,6 +323,17 @@
     width: 100%;
     max-height: 65vh;
     border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .edit-review-panel {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 75vh;
+    border-radius: 16px 16px 0 0;
     box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
   }
 }
