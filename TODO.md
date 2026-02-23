@@ -1,5 +1,8 @@
 # TODO
 
+- change existing location coordinates
+- heatmap of visits
+
 ## Per-location creator/editor tracking
 
 Track which user created each location and which users have edited it.
