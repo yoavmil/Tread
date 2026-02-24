@@ -14,4 +14,8 @@ export class SuggestService {
   submitNew(place: Record<string, unknown>): Observable<{ ok: boolean }> {
     return this.http.post<{ ok: boolean }>('/api/suggest-new', { place });
   }
+
+  submitErase(placeId: string, reason: string): Observable<{ ok: boolean; id: string }> {
+    return this.http.post<{ ok: boolean; id: string }>('/api/suggest-erase', { placeId, reason });
+  }
 }
