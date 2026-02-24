@@ -10,6 +10,11 @@
 - allow user to erase himself, then updated all his visited locations.
 - an about page
     - why is it different from Amud Anan and Google Maps
+- update users permission levels: visitor, editor, approver. by default every one is an editor, and if someone is troublesome, demote him to a viewer.
+- per user keep track of his edit count and new locations count
+- allow login using Facebook
+- allow feedback from users
+- display the number of edits
 
 ## Per-location creator/editor tracking
 
