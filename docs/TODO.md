@@ -15,6 +15,7 @@
 - allow login using Facebook
 - allow feedback from users
 - display the number of edits
+- merge edits and new location display
 
 ## Per-location creator/editor tracking
 
