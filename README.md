@@ -11,7 +11,7 @@ An interactive map for exploring and tracking visited places across Israel.
 
 ## Getting started
 
-See [SETUP.md](SETUP.md) for full setup instructions.
+See [SETUP.md](docs/SETUP.md) for full setup instructions.
 
 ```bash
 npm run install:all   # install all dependencies
@@ -21,4 +21,6 @@ npm start             # run backend (3000) + frontend (4200)
 
 ## Docs
 
-For architecture, services, environment variables, API reference, and the project TODO list, see [PROJECT.md](PROJECT.md).
+For architecture, services, environment variables, API reference, and the project TODO list, see [PROJECT.md](docs/PROJECT.md).
+
+For how much it costs for me per month, see [Here](docs/costs.md).

@@ -2,6 +2,14 @@
 
 - change existing location coordinates
 - heatmap of visits
+- add more locations, think of an API to upload a csv.
+- change landing page, to see the map, and only when the user wants to update his visited status request to login
+- pay for render hosting to prevent downtime
+- add option for one image per location
+- when erasing a location, make sure the user visited list is updated.
+- allow user to erase himself, then updated all his visited locations.
+- an about page
+    - why is it different from Amud Anan and Google Maps
 
 ## Per-location creator/editor tracking
 
