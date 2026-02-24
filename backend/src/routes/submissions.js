@@ -2,7 +2,9 @@ const express = require('express');
 const { requireAuth, requireApprover } = require('../middleware/auth');
 const NewSubmission = require('../models/NewSubmission');
 const EditSubmission = require('../models/EditSubmission');
+const EraseSubmission = require('../models/EraseSubmission');
 const Place = require('../models/Place');
+const User = require('../models/User');
 
 const router = express.Router();
 
@@ -137,6 +139,51 @@ router.post('/edit/:id/decline', async (req, res) => {
 
   submission.status = 'declined';
   await submission.save();
+  res.json({ ok: true });
+});
+
+// ── Erase submissions ─────────────────────────────────────────────────────────
+
+// GET /api/submissions/erase — list all pending erase submissions
+router.get('/erase', async (req, res) => {
+  const submissions = await EraseSubmission.find()
+    .select('_id placeId submittedBy createdAt')
+    .populate('submittedBy', 'displayName email')
+    .populate('placeId', 'name')
+    .sort({ createdAt: -1 })
+    .lean();
+  res.json(submissions);
+});
+
+// GET /api/submissions/erase/:id — single erase submission
+router.get('/erase/:id', async (req, res) => {
+  const submission = await EraseSubmission.findById(req.params.id)
+    .populate('submittedBy', 'displayName email')
+    .populate('placeId', 'name')
+    .lean();
+  if (!submission) return res.status(404).json({ error: 'Submission not found' });
+  res.json(submission);
+});
+
+// POST /api/submissions/erase/:id/approve — delete Place, clean up users, delete submission
+router.post('/erase/:id/approve', async (req, res) => {
+  const submission = await EraseSubmission.findById(req.params.id);
+  if (!submission) return res.status(404).json({ error: 'Submission not found' });
+
+  const placeId = submission.placeId;
+  await Place.findByIdAndDelete(placeId);
+  await User.updateMany({ visitedPlaces: placeId }, { $pull: { visitedPlaces: placeId } });
+  await EraseSubmission.findByIdAndDelete(submission._id);
+
+  res.json({ ok: true, placeId });
+});
+
+// POST /api/submissions/erase/:id/decline — delete submission, leave Place intact
+router.post('/erase/:id/decline', async (req, res) => {
+  const submission = await EraseSubmission.findById(req.params.id);
+  if (!submission) return res.status(404).json({ error: 'Submission not found' });
+
+  await EraseSubmission.findByIdAndDelete(submission._id);
   res.json({ ok: true });
 });
 
