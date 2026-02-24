@@ -12,7 +12,7 @@ import {
   REGION_LABELS,
   DIFFICULTY_LABELS,
 } from '../../../models/place.model';
-import { EditSubmission } from '../../../models/edit-submission.model';
+import { ReviewDetail } from '../../../models/edit-submission.model';
 
 interface FieldDef {
   key: string;
@@ -44,28 +44,36 @@ const FIELDS: FieldDef[] = [
           <button class="nav-btn" [disabled]="currentIndex === totalCount - 1" (click)="next.emit()">
             <mat-icon>chevron_left</mat-icon>
           </button>
-          <span class="header-title">עריכה ממתינה</span>
+          <span class="header-title">{{ detail.type === 'erase' ? 'מחיקה ממתינה' : 'עריכה ממתינה' }}</span>
         </div>
         <button class="close-btn" (click)="close.emit()">
           <mat-icon>close</mat-icon>
         </button>
       </div>
 
-      <div class="comparison-table">
-        <div class="col-header before-header">לפני</div>
-        <div class="col-header after-header">אחרי</div>
+      @if (detail.type === 'erase') {
+        <div class="erase-info">
+          <p class="erase-place-name">{{ detail.placeId.name }}</p>
+          <p class="erase-label">סיבה:</p>
+          <p class="erase-reason">{{ detail.reason || '(לא צוינה סיבה)' }}</p>
+        </div>
+      } @else {
+        <div class="comparison-table">
+          <div class="col-header before-header">לפני</div>
+          <div class="col-header after-header">אחרי</div>
 
-        @for (field of fields; track field.key) {
-          <div class="field-label">{{ field.label }}</div>
-          <div class="field-before">{{ displayValue(getBeforeValue(field.key), field.key) }}</div>
-          <div class="field-after" [class.changed]="hasChange(field.key)">
-            {{ displayValue(getAfterValue(field.key), field.key) }}
-            @if (hasChange(field.key)) {
-              <mat-icon class="change-icon">edit</mat-icon>
-            }
-          </div>
-        }
-      </div>
+          @for (field of fields; track field.key) {
+            <div class="field-label">{{ field.label }}</div>
+            <div class="field-before">{{ displayValue(getBeforeValue(field.key), field.key) }}</div>
+            <div class="field-after" [class.changed]="hasChange(field.key)">
+              {{ displayValue(getAfterValue(field.key), field.key) }}
+              @if (hasChange(field.key)) {
+                <mat-icon class="change-icon">edit</mat-icon>
+              }
+            </div>
+          }
+        </div>
+      }
 
       @if (detail.submittedBy?.displayName) {
         <p class="submitted-by">הוגש ע"י: {{ detail.submittedBy.displayName }}</p>
@@ -78,18 +86,24 @@ const FIELDS: FieldDef[] = [
           @if (declining) {
             <mat-spinner diameter="18"></mat-spinner>
           } @else {
-            <mat-icon>close</mat-icon>
-            דחה
+            <ng-container>
+              <mat-icon>close</mat-icon>
+              דחה
+            </ng-container>
           }
         </button>
-        <button mat-flat-button color="primary" class="approve-btn"
+        <button mat-flat-button
+          [color]="detail.type === 'erase' ? 'warn' : 'primary'"
+          class="approve-btn"
           [disabled]="approving || declining"
           (click)="onApprove()">
           @if (approving) {
             <mat-spinner diameter="18"></mat-spinner>
           } @else {
-            <mat-icon>check</mat-icon>
-            אשר
+            <ng-container>
+              <mat-icon>{{ detail.type === 'erase' ? 'delete_forever' : 'check' }}</mat-icon>
+              {{ detail.type === 'erase' ? 'אשר מחיקה' : 'אשר' }}
+            </ng-container>
           }
         </button>
       </div>
@@ -227,6 +241,34 @@ const FIELDS: FieldDef[] = [
       flex-shrink: 0;
     }
 
+    .erase-info {
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .erase-place-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a3a2a;
+      margin: 0 0 8px;
+    }
+
+    .erase-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #888;
+      margin: 0;
+    }
+
+    .erase-reason {
+      font-size: 14px;
+      color: #333;
+      margin: 0;
+      line-height: 1.5;
+    }
+
     .submitted-by {
       font-size: 12px;
       color: #888;
@@ -256,7 +298,7 @@ const FIELDS: FieldDef[] = [
   `]
 })
 export class EditReviewPanelComponent {
-  @Input() detail!: EditSubmission;
+  @Input() detail!: ReviewDetail;
   @Input() currentIndex = 0;
   @Input() totalCount = 0;
   @Output() close = new EventEmitter<void>();
@@ -271,6 +313,7 @@ export class EditReviewPanelComponent {
   readonly fields = FIELDS;
 
   hasChange(key: string): boolean {
+    if (this.detail.type === 'erase') return false;
     const after = this.detail.after as Record<string, unknown>;
     if (!(key in after)) return false;
     return JSON.stringify((this.detail.before as Record<string, unknown>)[key])
@@ -278,10 +321,12 @@ export class EditReviewPanelComponent {
   }
 
   getBeforeValue(key: string): unknown {
+    if (this.detail.type === 'erase') return undefined;
     return (this.detail.before as Record<string, unknown>)[key];
   }
 
   getAfterValue(key: string): unknown {
+    if (this.detail.type === 'erase') return undefined;
     const after = this.detail.after as Record<string, unknown>;
     return key in after
       ? after[key]

@@ -9,6 +9,7 @@ import {
   computed,
   effect,
 } from "@angular/core";
+import { forkJoin } from "rxjs";
 import { ActivatedRoute, Router, RouterModule } from "@angular/router";
 import { CommonModule, Location } from "@angular/common";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
@@ -21,7 +22,7 @@ import { AuthService } from "../../core/services/auth.service";
 import { SubmissionsService } from "../../core/services/submissions.service";
 import { Place, PlaceMarker, PlaceCategory, CATEGORY_LABELS, FilterState } from "../../models/place.model";
 import { NewSubmission } from "../../models/new-submission.model";
-import { EditSubmissionSummary, EditSubmission } from "../../models/edit-submission.model";
+import { ReviewItemSummary, ReviewDetail } from "../../models/edit-submission.model";
 import { environment } from "../../../environments/environment";
 import { FilterBarComponent } from "./filter-bar/filter-bar.component";
 import { PlacePanelComponent } from "./place-panel/place-panel.component";
@@ -194,10 +195,10 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   selectedPlace = signal<Place | null>(null);
   pendingSubmissions = signal<NewSubmission[]>([]);
   selectedSubmission = signal<NewSubmission | null>(null);
-  pendingEdits = signal<EditSubmissionSummary[]>([]);
+  pendingEdits = signal<ReviewItemSummary[]>([]);
   pendingEditsCount = signal(0);
   selectedEditIdx = signal(-1);
-  selectedEditDetail = signal<EditSubmission | null>(null);
+  selectedEditDetail = signal<ReviewDetail | null>(null);
   editDetailLoading = signal(false);
   activeFilters = signal<FilterState>({
     categories: Object.keys(CATEGORY_LABELS) as PlaceCategory[],
@@ -279,10 +280,13 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       error: () => this.loading.set(false),
     });
 
-    // Pre-fetch pending edits count for the badge
+    // Pre-fetch pending review count for the badge (edits + erases)
     if (this.auth.user()?.role === 'approver') {
-      this.submissionsService.getPendingEdits().subscribe(edits =>
-        this.pendingEditsCount.set(edits.length));
+      forkJoin([
+        this.submissionsService.getPendingEdits(),
+        this.submissionsService.getPendingErases(),
+      ]).subscribe(([edits, erases]) =>
+        this.pendingEditsCount.set(edits.length + erases.length));
     }
   }
 
@@ -374,7 +378,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     };
   }
 
-  private buildEditsGeoJSON(edits: EditSubmissionSummary[]): GeoJSON.FeatureCollection {
+  private buildEditsGeoJSON(edits: ReviewItemSummary[]): GeoJSON.FeatureCollection {
     const features: GeoJSON.Feature[] = [];
     edits.forEach((ed, idx) => {
       const place = this.allPlaces().find(p => p._id === ed.placeId._id);
@@ -653,15 +657,22 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private fetchAndShowEdits(): void {
-    this.submissionsService.getPendingEdits().subscribe((edits) => {
-      this.pendingEdits.set(edits);
-      this.pendingEditsCount.set(edits.length);
+    forkJoin([
+      this.submissionsService.getPendingEdits(),
+      this.submissionsService.getPendingErases(),
+    ]).subscribe(([edits, erases]) => {
+      const combined: ReviewItemSummary[] = [
+        ...edits.map(e => ({ ...e, type: 'edit' as const })),
+        ...erases.map(e => ({ ...e, type: 'erase' as const })),
+      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      this.pendingEdits.set(combined);
+      this.pendingEditsCount.set(combined.length);
       this.initEditsLayer();
       if (this.map.getLayer(LAYER_EDITS)) {
         this.map.setLayoutProperty(LAYER_EDITS, "visibility", "visible");
       }
       this.refreshEditsSource();
-      if (edits.length > 0) {
+      if (combined.length > 0) {
         this.openEditByIndex(0);
       }
     });
@@ -756,10 +767,17 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
         duration: 600,
       });
     }
-    this.submissionsService.getEditById(summary._id).subscribe({
-      next: (detail) => { this.selectedEditDetail.set(detail); this.editDetailLoading.set(false); },
-      error: () => this.editDetailLoading.set(false),
-    });
+    if (summary.type === 'erase') {
+      this.submissionsService.getEraseById(summary._id).subscribe({
+        next: (detail) => { this.selectedEditDetail.set({ ...detail, type: 'erase' }); this.editDetailLoading.set(false); },
+        error: () => this.editDetailLoading.set(false),
+      });
+    } else {
+      this.submissionsService.getEditById(summary._id).subscribe({
+        next: (detail) => { this.selectedEditDetail.set({ ...detail, type: 'edit' }); this.editDetailLoading.set(false); },
+        error: () => this.editDetailLoading.set(false),
+      });
+    }
   }
 
   openPanel(marker: PlaceMarker): void {
@@ -831,30 +849,57 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   onApproveEdit(): void {
     const detail = this.selectedEditDetail();
     if (!detail) return;
-    this.submissionsService.approveEdit(detail._id).subscribe({
-      next: () => {
-        const idx = this.selectedEditIdx();
-        this.pendingEdits.update(edits => edits.filter(e => e._id !== detail._id));
-        this.pendingEditsCount.set(this.pendingEdits().length);
-        if (this.mapReady) this.refreshEditsSource();
-        const newLength = this.pendingEdits().length;
-        if (newLength === 0) {
-          this.closeEditPanel();
-        } else {
-          this.openEditByIndex(Math.min(idx, newLength - 1));
-        }
-      },
-      error: () => {},
-    });
+
+    if (detail.type === 'erase') {
+      const placeId = detail.placeId._id;
+      this.submissionsService.approveErase(detail._id).subscribe({
+        next: () => {
+          // Remove ALL pending review items for this place (edits + other erases)
+          this.pendingEdits.update(items => items.filter(i => i.placeId._id !== placeId));
+          // Remove the place from the map
+          this.allPlaces.update(places => places.filter(p => p._id !== placeId));
+          if (this.mapReady) { this.refreshSource(); this.refreshEditsSource(); }
+          this.pendingEditsCount.set(this.pendingEdits().length);
+          const newLength = this.pendingEdits().length;
+          if (newLength === 0) {
+            this.closeEditPanel();
+          } else {
+            this.openEditByIndex(0);
+          }
+        },
+        error: () => {},
+      });
+    } else {
+      this.submissionsService.approveEdit(detail._id).subscribe({
+        next: () => {
+          const idx = this.selectedEditIdx();
+          this.pendingEdits.update(edits => edits.filter(e => e._id !== detail._id));
+          this.pendingEditsCount.set(this.pendingEdits().length);
+          if (this.mapReady) this.refreshEditsSource();
+          const newLength = this.pendingEdits().length;
+          if (newLength === 0) {
+            this.closeEditPanel();
+          } else {
+            this.openEditByIndex(Math.min(idx, newLength - 1));
+          }
+        },
+        error: () => {},
+      });
+    }
   }
 
   onDeclineEdit(): void {
     const detail = this.selectedEditDetail();
     if (!detail) return;
-    this.submissionsService.declineEdit(detail._id).subscribe({
+    const idx = this.selectedEditIdx();
+
+    const decline$ = detail.type === 'erase'
+      ? this.submissionsService.declineErase(detail._id)
+      : this.submissionsService.declineEdit(detail._id);
+
+    decline$.subscribe({
       next: () => {
-        const idx = this.selectedEditIdx();
-        this.pendingEdits.update(edits => edits.filter(e => e._id !== detail._id));
+        this.pendingEdits.update(items => items.filter(i => i._id !== detail._id));
         this.pendingEditsCount.set(this.pendingEdits().length);
         if (this.mapReady) this.refreshEditsSource();
         const newLength = this.pendingEdits().length;

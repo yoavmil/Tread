@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 
@@ -46,6 +46,7 @@ const DISPLAY_GROUPS: CategoryGroup[] = [
         >מקומות חדשים</mat-checkbox>
         <mat-checkbox
           [checked]="showPendingEdits"
+          [disabled]="pendingEditsCount === 0"
           (change)="togglePendingEdits()"
         >עריכות לאישור{{ pendingEditsCount > 0 ? ' (' + pendingEditsCount + ')' : '' }}</mat-checkbox>
       }
@@ -64,7 +65,7 @@ const DISPLAY_GROUPS: CategoryGroup[] = [
     }
   `]
 })
-export class FilterBarComponent implements OnInit {
+export class FilterBarComponent implements OnInit, OnChanges {
   @Input() pendingEditsCount = 0;
   @Output() filterChange = new EventEmitter<FilterState>();
   @Output() pendingEditsEnabled = new EventEmitter<void>();
@@ -79,6 +80,13 @@ export class FilterBarComponent implements OnInit {
     private filterStateService: FilterStateService,
     public auth: AuthService,
   ) {}
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['pendingEditsCount'] && this.pendingEditsCount === 0 && this.showPendingEdits) {
+      this.showPendingEdits = false;
+      this.emitChange();
+    }
+  }
 
   ngOnInit(): void {
     const saved = this.filterStateService.state();
