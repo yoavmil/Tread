@@ -50,4 +50,5 @@ export interface FilterState {
   region: PlaceRegion | null;
   showVisited: boolean;
   showPendingSubmissions: boolean;
+  showPendingEdits: boolean;
 }

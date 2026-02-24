@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -20,6 +20,7 @@ import { SuggestService } from '../../core/services/suggest.service';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     MatButtonModule,
     MatIconModule,
     MatInputModule,
@@ -32,110 +33,154 @@ import { SuggestService } from '../../core/services/suggest.service';
     <div class="edit-page">
       <div class="edit-card" *ngIf="place; else loading">
 
-        <div class="edit-header">
-          <button mat-icon-button class="back-btn" (click)="goBack()">
-            <mat-icon>arrow_back</mat-icon>
-          </button>
-          <h1>הצעת עריכה</h1>
-        </div>
-
-        <p class="subtitle">
-          עורך את: <strong>{{ place.name }}</strong><br>
-          השינויים יישלחו לבדיקה לפני שיפורסמו.
-        </p>
-
-        <form [formGroup]="form" (ngSubmit)="submit()">
-
-          <mat-form-field appearance="outline">
-            <mat-label>שם</mat-label>
-            <input matInput formControlName="name" dir="rtl">
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>שמות נוספים (מופרדים בפסיקים)</mat-label>
-            <input matInput formControlName="aliases" dir="rtl"
-              placeholder="שם אחר, שם נוסף">
-            <mat-hint>הפרד בין שמות עם פסיק</mat-hint>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>קישור חיצוני</mat-label>
-            <input matInput formControlName="externalUrl" dir="ltr"
-              placeholder="https://...">
-          </mat-form-field>
-
-          <div class="row">
-            <mat-form-field appearance="outline">
-              <mat-label>קטגוריה</mat-label>
-              <mat-select formControlName="category">
-                @for (cat of categories; track cat.value) {
-                  <mat-option [value]="cat.value">{{ cat.label }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>אזור</mat-label>
-              <mat-select formControlName="region">
-                @for (r of regions; track r.value) {
-                  <mat-option [value]="r.value">{{ r.label }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
+        @if (eraseMode) {
+          <div class="edit-header">
+            <button mat-icon-button class="back-btn" type="button" (click)="exitEraseMode()">
+              <mat-icon>arrow_back</mat-icon>
+            </button>
+            <h1>הצעת מחיקה</h1>
           </div>
-
-          <mat-form-field appearance="outline">
-            <mat-label>רמת קושי</mat-label>
-            <mat-select formControlName="difficulty">
-              <mat-option [value]="null">—</mat-option>
-              <mat-option value="easy">קל</mat-option>
-              <mat-option value="moderate">בינוני</mat-option>
-              <mat-option value="hard">קשה</mat-option>
-            </mat-select>
+          <p class="subtitle erase-warning">
+            אתה מציע למחוק את <strong>{{ place.name }}</strong>.<br>
+            ניתן לצרף סיבה (לא חובה).
+          </p>
+          <mat-form-field appearance="outline" class="reason-field">
+            <mat-label>סיבה</mat-label>
+            <textarea matInput [(ngModel)]="eraseReason" name="eraseReason"
+              dir="rtl" rows="4" placeholder="למה כדאי למחוק מקום זה?"></textarea>
           </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>תיאור</mat-label>
-            <textarea matInput formControlName="description" dir="rtl" rows="4"></textarea>
-          </mat-form-field>
-
-          <div class="coords-section">
-            <label class="coords-label">קואורדינטות</label>
-            <div class="coords-row">
-              <mat-form-field appearance="outline" class="coord-field">
-                <mat-label>קו רוחב (lat)</mat-label>
-                <input matInput type="number" formControlName="lat" step="0.0001">
-              </mat-form-field>
-              <mat-form-field appearance="outline" class="coord-field">
-                <mat-label>קו אורך (lng)</mat-label>
-                <input matInput type="number" formControlName="lng" step="0.0001">
-              </mat-form-field>
-              <button mat-stroked-button type="button" class="gps-btn"
-                (click)="useMyLocation()" [disabled]="gettingLocation">
-                @if (gettingLocation) {
-                  <mat-spinner diameter="18"></mat-spinner>
-                } @else {
-                  <mat-icon>my_location</mat-icon>
-                  מיקום נוכחי
-                }
-              </button>
-            </div>
-          </div>
-
           <div class="actions">
-            <button mat-button type="button" (click)="goBack()">ביטול</button>
-            <button mat-flat-button color="primary" type="submit"
-              [disabled]="form.invalid || submitting">
-              @if (submitting) {
+            <button mat-button type="button" (click)="exitEraseMode()">חזרה</button>
+            <button mat-flat-button color="warn" type="button"
+              (click)="submitErase()" [disabled]="erasing">
+              @if (erasing) {
                 <mat-spinner diameter="20"></mat-spinner>
               } @else {
-                <mat-icon>send</mat-icon>
-                שלח הצעה
+                <ng-container>
+                  <mat-icon>delete_forever</mat-icon>
+                  אני בטוח, מחק
+                </ng-container>
               }
             </button>
           </div>
+        }
 
-        </form>
+        @if (!eraseMode) {
+          <div class="edit-header">
+            <button mat-icon-button class="back-btn" (click)="goBack()">
+              <mat-icon>arrow_back</mat-icon>
+            </button>
+            <h1>הצעת עריכה</h1>
+          </div>
+
+          <p class="subtitle">
+            עורך את: <strong>{{ place.name }}</strong><br>
+            השינויים יישלחו לבדיקה לפני שיפורסמו.
+          </p>
+
+          <form [formGroup]="form" (ngSubmit)="submit()">
+
+            <mat-form-field appearance="outline">
+              <mat-label>שם</mat-label>
+              <input matInput formControlName="name" dir="rtl">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>שמות נוספים (מופרדים בפסיקים)</mat-label>
+              <input matInput formControlName="aliases" dir="rtl"
+                placeholder="שם אחר, שם נוסף">
+              <mat-hint>הפרד בין שמות עם פסיק</mat-hint>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>קישור חיצוני</mat-label>
+              <input matInput formControlName="externalUrl" dir="ltr"
+                placeholder="https://...">
+            </mat-form-field>
+
+            <div class="row">
+              <mat-form-field appearance="outline">
+                <mat-label>קטגוריה</mat-label>
+                <mat-select formControlName="category">
+                  @for (cat of categories; track cat.value) {
+                    <mat-option [value]="cat.value">{{ cat.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>אזור</mat-label>
+                <mat-select formControlName="region">
+                  @for (r of regions; track r.value) {
+                    <mat-option [value]="r.value">{{ r.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <mat-form-field appearance="outline">
+              <mat-label>רמת קושי</mat-label>
+              <mat-select formControlName="difficulty">
+                <mat-option [value]="null">—</mat-option>
+                <mat-option value="easy">קל</mat-option>
+                <mat-option value="moderate">בינוני</mat-option>
+                <mat-option value="hard">קשה</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>תיאור</mat-label>
+              <textarea matInput formControlName="description" dir="rtl" rows="4"></textarea>
+            </mat-form-field>
+
+            <div class="coords-section">
+              <label class="coords-label">קואורדינטות</label>
+              <div class="coords-row">
+                <mat-form-field appearance="outline" class="coord-field">
+                  <mat-label>קו רוחב (lat)</mat-label>
+                  <input matInput type="number" formControlName="lat" step="0.0001">
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="coord-field">
+                  <mat-label>קו אורך (lng)</mat-label>
+                  <input matInput type="number" formControlName="lng" step="0.0001">
+                </mat-form-field>
+                <button mat-stroked-button type="button" class="gps-btn"
+                  (click)="useMyLocation()" [disabled]="gettingLocation">
+                  @if (gettingLocation) {
+                    <mat-spinner diameter="18"></mat-spinner>
+                  } @else {
+                    <ng-container>
+                      <mat-icon>my_location</mat-icon>
+                      מיקום נוכחי
+                    </ng-container>
+                  }
+                </button>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button mat-button type="button" (click)="goBack()">ביטול</button>
+              <button mat-button color="warn" type="button" class="erase-btn"
+                (click)="enterEraseMode()">
+                <mat-icon>delete_forever</mat-icon>
+                הצע מחיקה
+              </button>
+              <button mat-flat-button color="primary" type="submit"
+                [disabled]="form.invalid || submitting">
+                @if (submitting) {
+                  <mat-spinner diameter="20"></mat-spinner>
+                } @else {
+                  <ng-container>
+                    <mat-icon>send</mat-icon>
+                    שלח הצעה
+                  </ng-container>
+                }
+              </button>
+            </div>
+
+          </form>
+        }
+
       </div>
 
       <ng-template #loading>
@@ -190,6 +235,13 @@ import { SuggestService } from '../../core/services/suggest.service';
       color: #666;
       margin: 0 0 24px;
       line-height: 1.6;
+    }
+
+    .erase-warning { color: #c62828; }
+
+    .reason-field {
+      width: 100%;
+      margin-top: 8px;
     }
 
     form {
@@ -247,7 +299,7 @@ import { SuggestService } from '../../core/services/suggest.service';
       gap: 12px;
       margin-top: 8px;
 
-      button[mat-flat-button] {
+      button[mat-flat-button], .erase-btn {
         gap: 6px;
         mat-icon { font-size: 18px; width: 18px; height: 18px; }
       }
@@ -269,6 +321,10 @@ export class EditPlaceComponent implements OnInit {
   form!: FormGroup;
   submitting = false;
   gettingLocation = false;
+
+  eraseMode = false;
+  eraseReason = '';
+  erasing = false;
 
   categories = (Object.entries(CATEGORY_LABELS) as [PlaceCategory, string][])
     .map(([value, label]) => ({ value, label }));
@@ -351,6 +407,25 @@ export class EditPlaceComponent implements OnInit {
       },
       error: () => {
         this.submitting = false;
+        this.snackBar.open('שגיאה בשליחה. נסה שוב.', 'סגור', { duration: 4000 });
+      }
+    });
+  }
+
+  enterEraseMode(): void { this.eraseMode = true; }
+  exitEraseMode(): void  { this.eraseMode = false; }
+
+  submitErase(): void {
+    if (!this.place) return;
+    this.erasing = true;
+    this.suggest.submitErase(this.place._id, this.eraseReason.trim()).subscribe({
+      next: () => {
+        this.erasing = false;
+        this.snackBar.open('תודה! הצעת המחיקה נשלחה לבדיקה.', 'סגור', { duration: 4000 });
+        this.goBack();
+      },
+      error: () => {
+        this.erasing = false;
         this.snackBar.open('שגיאה בשליחה. נסה שוב.', 'סגור', { duration: 4000 });
       }
     });

@@ -65,7 +65,6 @@ import { SuggestService } from '../../core/services/suggest.service';
             <mat-form-field appearance="outline">
               <mat-label>קטגוריה</mat-label>
               <mat-select formControlName="category">
-                <mat-option [value]="null">—</mat-option>
                 @for (cat of categories; track cat.value) {
                   <mat-option [value]="cat.value">{{ cat.label }}</mat-option>
                 }
@@ -264,7 +263,7 @@ export class NewPlaceComponent implements OnInit {
       name:        ['', Validators.required],
       aliases:     [''],
       externalUrl: [''],
-      category:    [null],
+      category:    [null, Validators.required],
       region:      [null],
       difficulty:  [null],
       description: [''],

@@ -1,4 +1,4 @@
-import { Component, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 
@@ -44,6 +44,11 @@ const DISPLAY_GROUPS: CategoryGroup[] = [
           [checked]="showPendingSubmissions"
           (change)="showPendingSubmissions = !showPendingSubmissions; emitChange()"
         >מקומות חדשים</mat-checkbox>
+        <mat-checkbox
+          [checked]="showPendingEdits"
+          [disabled]="pendingEditsCount === 0"
+          (change)="togglePendingEdits()"
+        >עריכות לאישור{{ pendingEditsCount > 0 ? ' (' + pendingEditsCount + ')' : '' }}</mat-checkbox>
       }
     </div>
   `,
@@ -60,24 +65,35 @@ const DISPLAY_GROUPS: CategoryGroup[] = [
     }
   `]
 })
-export class FilterBarComponent implements OnInit {
+export class FilterBarComponent implements OnInit, OnChanges {
+  @Input() pendingEditsCount = 0;
   @Output() filterChange = new EventEmitter<FilterState>();
+  @Output() pendingEditsEnabled = new EventEmitter<void>();
 
   groups = DISPLAY_GROUPS;
   selectedCategories: PlaceCategory[] = [];
   showVisited = true;
   showPendingSubmissions = false;
+  showPendingEdits = false;
 
   constructor(
     private filterStateService: FilterStateService,
     public auth: AuthService,
   ) {}
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['pendingEditsCount'] && this.pendingEditsCount === 0 && this.showPendingEdits) {
+      this.showPendingEdits = false;
+      this.emitChange();
+    }
+  }
+
   ngOnInit(): void {
     const saved = this.filterStateService.state();
     this.selectedCategories = [...saved.categories];
     this.showVisited = saved.showVisited;
     this.showPendingSubmissions = saved.showPendingSubmissions;
+    this.showPendingEdits = saved.showPendingEdits;
     this.emitChange();
   }
 
@@ -95,12 +111,19 @@ export class FilterBarComponent implements OnInit {
     this.emitChange();
   }
 
+  togglePendingEdits(): void {
+    this.showPendingEdits = !this.showPendingEdits;
+    this.emitChange();
+    if (this.showPendingEdits) this.pendingEditsEnabled.emit();
+  }
+
   emitChange(): void {
     const state: FilterState = {
       categories: this.selectedCategories,
       region: null,
       showVisited: this.showVisited,
       showPendingSubmissions: this.showPendingSubmissions,
+      showPendingEdits: this.showPendingEdits,
     };
     this.filterStateService.set(state);
     this.filterChange.emit(state);

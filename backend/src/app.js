@@ -10,6 +10,7 @@ const placesRoutes = require('./routes/places');
 const usersRoutes = require('./routes/users');
 const suggestsRoutes = require('./routes/suggests');
 const suggestNewRoutes = require('./routes/suggest-new');
+const suggestEraseRoutes = require('./routes/suggest-erase');
 const submissionsRoutes = require('./routes/submissions');
 
 const app = express();
@@ -31,6 +32,7 @@ app.use('/api/places', placesRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/suggest-edit', suggestsRoutes);
 app.use('/api/suggest-new', suggestNewRoutes);
+app.use('/api/suggest-erase', suggestEraseRoutes);
 app.use('/api/submissions', submissionsRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));

@@ -1,7 +1,10 @@
 const express = require('express');
 const { requireAuth, requireApprover } = require('../middleware/auth');
 const NewSubmission = require('../models/NewSubmission');
+const EditSubmission = require('../models/EditSubmission');
+const EraseSubmission = require('../models/EraseSubmission');
 const Place = require('../models/Place');
+const User = require('../models/User');
 
 const router = express.Router();
 
@@ -52,7 +55,16 @@ router.post('/new/:id/approve', async (req, res) => {
     return res.status(400).json({ error: 'Submission has already been reviewed' });
   }
 
-  const place = await Place.create(submission.placeData);
+  let place;
+  try {
+    place = await Place.create(submission.placeData);
+  } catch (err) {
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ error: 'Submission data is incomplete: ' + err.message });
+    }
+    throw err;
+  }
+
   submission.status = 'accepted';
   await submission.save();
 
@@ -69,6 +81,118 @@ router.post('/new/:id/decline', async (req, res) => {
 
   submission.status = 'declined';
   await submission.save();
+  res.json({ ok: true });
+});
+
+// ── Edit submissions ─────────────────────────────────────────────────────────
+
+// GET /api/submissions/edit — list pending edit submissions (id + summary only)
+router.get('/edit', async (req, res) => {
+  const submissions = await EditSubmission.find({ status: 'pending' })
+    .select('_id placeId submittedBy createdAt')
+    .populate('submittedBy', 'displayName email')
+    .populate('placeId', 'name')
+    .sort({ createdAt: -1 })
+    .lean();
+  res.json(submissions);
+});
+
+// GET /api/submissions/edit/:id — single edit submission
+router.get('/edit/:id', async (req, res) => {
+  const submission = await EditSubmission.findById(req.params.id)
+    .populate('submittedBy', 'displayName email')
+    .populate('placeId', 'name')
+    .lean();
+  if (!submission) return res.status(404).json({ error: 'Submission not found' });
+  res.json(submission);
+});
+
+// PATCH /api/submissions/edit/:id — update the proposed `after` fields before approval
+router.patch('/edit/:id', async (req, res) => {
+  const { after } = req.body;
+  if (!after) return res.status(400).json({ error: 'after is required' });
+
+  const submission = await EditSubmission.findById(req.params.id);
+  if (!submission) return res.status(404).json({ error: 'Submission not found' });
+  if (submission.status !== 'pending') {
+    return res.status(400).json({ error: 'Submission has already been reviewed' });
+  }
+
+  submission.after = after;
+  await submission.save();
+  res.json({ ok: true });
+});
+
+// POST /api/submissions/edit/:id/approve — apply `after` to the Place and mark accepted
+router.post('/edit/:id/approve', async (req, res) => {
+  const submission = await EditSubmission.findById(req.params.id);
+  if (!submission) return res.status(404).json({ error: 'Submission not found' });
+  if (submission.status !== 'pending') {
+    return res.status(400).json({ error: 'Submission has already been reviewed' });
+  }
+
+  await Place.findByIdAndUpdate(submission.placeId, { $set: submission.after });
+  submission.status = 'accepted';
+  await submission.save();
+
+  res.json({ ok: true, placeId: submission.placeId });
+});
+
+// POST /api/submissions/edit/:id/decline — mark declined
+router.post('/edit/:id/decline', async (req, res) => {
+  const submission = await EditSubmission.findById(req.params.id);
+  if (!submission) return res.status(404).json({ error: 'Submission not found' });
+  if (submission.status !== 'pending') {
+    return res.status(400).json({ error: 'Submission has already been reviewed' });
+  }
+
+  submission.status = 'declined';
+  await submission.save();
+  res.json({ ok: true });
+});
+
+// ── Erase submissions ─────────────────────────────────────────────────────────
+
+// GET /api/submissions/erase — list all pending erase submissions
+router.get('/erase', async (req, res) => {
+  const submissions = await EraseSubmission.find()
+    .select('_id placeId submittedBy createdAt')
+    .populate('submittedBy', 'displayName email')
+    .populate('placeId', 'name')
+    .sort({ createdAt: -1 })
+    .lean();
+  res.json(submissions);
+});
+
+// GET /api/submissions/erase/:id — single erase submission
+router.get('/erase/:id', async (req, res) => {
+  const submission = await EraseSubmission.findById(req.params.id)
+    .populate('submittedBy', 'displayName email')
+    .populate('placeId', 'name')
+    .lean();
+  if (!submission) return res.status(404).json({ error: 'Submission not found' });
+  res.json(submission);
+});
+
+// POST /api/submissions/erase/:id/approve — delete Place, clean up users, delete submission
+router.post('/erase/:id/approve', async (req, res) => {
+  const submission = await EraseSubmission.findById(req.params.id);
+  if (!submission) return res.status(404).json({ error: 'Submission not found' });
+
+  const placeId = submission.placeId;
+  await Place.findByIdAndDelete(placeId);
+  await User.updateMany({ visitedPlaces: placeId }, { $pull: { visitedPlaces: placeId } });
+  await EraseSubmission.findByIdAndDelete(submission._id);
+
+  res.json({ ok: true, placeId });
+});
+
+// POST /api/submissions/erase/:id/decline — delete submission, leave Place intact
+router.post('/erase/:id/decline', async (req, res) => {
+  const submission = await EraseSubmission.findById(req.params.id);
+  if (!submission) return res.status(404).json({ error: 'Submission not found' });
+
+  await EraseSubmission.findByIdAndDelete(submission._id);
   res.json({ ok: true });
 });
 
