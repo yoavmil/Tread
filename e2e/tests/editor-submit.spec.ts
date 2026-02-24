@@ -23,18 +23,23 @@ test.describe('Editor — submit new location', () => {
 
     // ── 3. Fill in the form ─────────────────────────────────────────────────
     // Name
-    await page
+    const nameInput = page
       .locator('mat-form-field')
-      .filter({ has: page.locator('mat-label', { hasText: 'שם' }) })
+      .filter({ has: page.locator('mat-label', { hasText: /^שם$/ }) })
       .locator('input')
       .fill('E2E Test Place');
-
-    // Category (first mat-select)
-    await page.locator('mat-select').nth(0).click();
+    
+    // Category
+    await page.locator('mat-select').nth(0).click({ force: true });
+    await page.waitForSelector('mat-option', { state: 'visible' });
     await page.getByRole('option', { name: 'טבע' }).click();
 
-    // Region (second mat-select)
+    // Wait for panel to fully close before opening next
+    await page.waitForSelector('mat-option', { state: 'detached' });
+
+    // Region
     await page.locator('mat-select').nth(1).click();
+    await page.waitForSelector('mat-option', { state: 'visible' });
     await page.getByRole('option', { name: 'מרכז' }).click();
 
     // Coordinates
