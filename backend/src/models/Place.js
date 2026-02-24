@@ -5,7 +5,7 @@ const placeSchema = new mongoose.Schema({
   category: {
     type: String,
     enum: ['nature', 'historical', 'trail', 'city'],
-    required: true
+    default: 'nature'
   },
   description: { type: String, default: '' },
   coordinates: {
@@ -15,7 +15,7 @@ const placeSchema = new mongoose.Schema({
   region: {
     type: String,
     enum: ['north', 'center', 'jerusalem', 'south', 'judea'],
-    required: true
+    default: null
   },
   difficulty: {
     type: String,

@@ -55,7 +55,16 @@ router.post('/new/:id/approve', async (req, res) => {
     return res.status(400).json({ error: 'Submission has already been reviewed' });
   }
 
-  const place = await Place.create(submission.placeData);
+  let place;
+  try {
+    place = await Place.create(submission.placeData);
+  } catch (err) {
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ error: 'Submission data is incomplete: ' + err.message });
+    }
+    throw err;
+  }
+
   submission.status = 'accepted';
   await submission.save();
 
