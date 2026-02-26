@@ -76,7 +76,7 @@ const FIELDS: FieldDef[] = [
         </div>
       }
 
-      @if (detail.submittedBy?.displayName) {
+      @if (detail.submittedBy.displayName) {
         <p class="submitted-by">הוגש ע"י: {{ detail.submittedBy.displayName }}</p>
       }
 

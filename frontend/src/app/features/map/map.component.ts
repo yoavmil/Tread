@@ -143,7 +143,7 @@ const SOURCE_COORD_NEW = "coord-new";
             [isVisited]="false"
             [submissionId]="selectedSubmission()!._id"
             [isApprover]="auth.user()?.role === 'approver'"
-            [submittedByName]="selectedSubmission()!.submittedBy?.displayName"
+            [submittedByName]="selectedSubmission()!.submittedBy.displayName"
             (close)="closeSubmissionPanel()"
             (approve)="onApproveSubmission()"
             (decline)="onDeclineSubmission()"
