@@ -27,6 +27,7 @@ const FIELDS: FieldDef[] = [
   { key: 'difficulty',  label: 'קושי' },
   { key: 'aliases',     label: 'שמות נוספים' },
   { key: 'externalUrl', label: 'קישור' },
+  { key: 'coordinates', label: 'מיקום' },
 ];
 
 @Component({
@@ -75,7 +76,7 @@ const FIELDS: FieldDef[] = [
         </div>
       }
 
-      @if (detail.submittedBy?.displayName) {
+      @if (detail.submittedBy.displayName) {
         <p class="submitted-by">הוגש ע"י: {{ detail.submittedBy.displayName }}</p>
       }
 
@@ -340,6 +341,10 @@ export class EditReviewPanelComponent {
     if (key === 'region')   return REGION_LABELS[val as PlaceRegion] ?? String(val);
     if (key === 'difficulty') {
       return val ? (DIFFICULTY_LABELS[val as NonNullable<TrailDifficulty>] ?? String(val)) : '—';
+    }
+    if (key === 'coordinates' && typeof val === 'object') {
+      const c = val as { lat: number; lng: number };
+      return `${c.lat.toFixed(5)}, ${c.lng.toFixed(5)}`;
     }
     return String(val);
   }
