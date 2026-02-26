@@ -258,6 +258,7 @@ import { VisitsService } from '../../../core/services/visits.service';
 
     .panel-footer {
       padding: 12px 16px;
+      padding-bottom: max(12px, calc(12px + env(safe-area-inset-bottom, 0px)));
       border-top: 1px solid #f0f0f0;
     }
 
