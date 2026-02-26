@@ -138,11 +138,13 @@ import { SuggestService } from '../../core/services/suggest.service';
               <div class="coords-row">
                 <mat-form-field appearance="outline" class="coord-field">
                   <mat-label>קו רוחב (lat)</mat-label>
-                  <input matInput type="number" formControlName="lat" step="0.0001">
+                  <input matInput type="number" formControlName="lat" step="0.0001"
+                    (paste)="onCoordPaste($event)">
                 </mat-form-field>
                 <mat-form-field appearance="outline" class="coord-field">
                   <mat-label>קו אורך (lng)</mat-label>
-                  <input matInput type="number" formControlName="lng" step="0.0001">
+                  <input matInput type="number" formControlName="lng" step="0.0001"
+                    (paste)="onCoordPaste($event)">
                 </mat-form-field>
                 <button mat-stroked-button type="button" class="gps-btn"
                   (click)="useMyLocation()" [disabled]="gettingLocation">
@@ -366,6 +368,18 @@ export class EditPlaceComponent implements OnInit {
       lat:         [p.coordinates?.lat, Validators.required],
       lng:         [p.coordinates?.lng, Validators.required],
     });
+  }
+
+  onCoordPaste(event: ClipboardEvent): void {
+    const text = event.clipboardData?.getData('text')?.trim();
+    if (!text) return;
+    const parts = text.split(',').map(s => s.trim());
+    if (parts.length !== 2) return;
+    const lat = parseFloat(parts[0]);
+    const lng = parseFloat(parts[1]);
+    if (isNaN(lat) || isNaN(lng)) return;
+    event.preventDefault();
+    this.form.patchValue({ lat, lng });
   }
 
   useMyLocation(): void {

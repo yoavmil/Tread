@@ -178,6 +178,10 @@ const SOURCE_COORD_NEW = "coord-new";
               <mat-icon>add_location</mat-icon>
               הצע מקום חדש כאן
             </button>
+            <button class="ctx-item" (click)="onContextCopyCoords()">
+              <mat-icon>content_copy</mat-icon>
+              העתק קואורדינטות
+            </button>
           </div>
         }
       </div>
@@ -1039,6 +1043,12 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     const menu = this.contextMenu();
     this.contextMenu.set(null);
     if (menu) this.openNewPlace(menu.lat, menu.lng);
+  }
+
+  onContextCopyCoords(): void {
+    const menu = this.contextMenu();
+    this.contextMenu.set(null);
+    if (menu) navigator.clipboard.writeText(`${menu.lat}, ${menu.lng}`);
   }
 
   openNewPlace(lat?: number, lng?: number): void {
