@@ -1,6 +1,5 @@
 # TODO
 
-- change existing location coordinates
 - allow feedback from users
 - add more locations, think of an API to upload a csv.
 - change landing page, to see the map, and only when the user wants to update his visited status request to login
