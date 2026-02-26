@@ -34,9 +34,11 @@ const LAYER_VISITED = "places-visited";
 const LAYER_SELECTED = "places-selected";
 const LAYER_SUBMISSIONS = "places-submissions";
 const LAYER_EDITS = "places-edits";
+const LAYER_COORD_NEW = "places-coord-new";
 const SOURCE_ID = "places";
 const SOURCE_SUBMISSIONS = "submissions";
 const SOURCE_EDITS = "edits";
+const SOURCE_COORD_NEW = "coord-new";
 
 @Component({
   selector: "app-map",
@@ -261,6 +263,11 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       } else {
         this.hideEditsLayer();
       }
+    });
+
+    // Clear the proposed-position marker whenever no edit is being reviewed
+    effect(() => {
+      if (!this.selectedEditDetail()) this.clearCoordChange();
     });
   }
 
@@ -687,6 +694,46 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.selectedEditIdx.set(-1);
   }
 
+  private initCoordNewLayer(): void {
+    if (this.map.getSource(SOURCE_COORD_NEW)) return;
+    this.map.addSource(SOURCE_COORD_NEW, {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: [] },
+    });
+    this.map.addLayer({
+      id: LAYER_COORD_NEW,
+      type: "circle",
+      source: SOURCE_COORD_NEW,
+      paint: {
+        "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 7, 12, 12],
+        "circle-color": "#22C55E",
+        "circle-stroke-width": 2.5,
+        "circle-stroke-color": "#fff",
+        "circle-opacity": 0.95,
+      },
+    });
+  }
+
+  private showCoordChange(newCoords: { lat: number; lng: number }): void {
+    if (!this.mapReady) return;
+    this.initCoordNewLayer();
+    const source = this.map.getSource(SOURCE_COORD_NEW) as mapboxgl.GeoJSONSource;
+    source.setData({
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [newCoords.lng, newCoords.lat] },
+        properties: {},
+      }],
+    });
+    this.map.setLayoutProperty(LAYER_COORD_NEW, "visibility", "visible");
+  }
+
+  private clearCoordChange(): void {
+    if (!this.mapReady || !this.map?.getLayer(LAYER_COORD_NEW)) return;
+    this.map.setLayoutProperty(LAYER_COORD_NEW, "visibility", "none");
+  }
+
   private buildMapboxFilter(filters: FilterState): mapboxgl.Expression[] {
     const conditions: mapboxgl.Expression[] = [];
     conditions.push([
@@ -774,7 +821,23 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       });
     } else {
       this.submissionsService.getEditById(summary._id).subscribe({
-        next: (detail) => { this.selectedEditDetail.set({ ...detail, type: 'edit' }); this.editDetailLoading.set(false); },
+        next: (detail) => {
+          this.selectedEditDetail.set({ ...detail, type: 'edit' });
+          this.editDetailLoading.set(false);
+          const oldCoords = detail.before.coordinates;
+          const newCoords = detail.after.coordinates;
+          if (oldCoords && newCoords &&
+              (oldCoords.lat !== newCoords.lat || oldCoords.lng !== newCoords.lng)) {
+            this.showCoordChange(newCoords);
+            this.map.fitBounds(
+              [
+                [Math.min(oldCoords.lng, newCoords.lng), Math.min(oldCoords.lat, newCoords.lat)],
+                [Math.max(oldCoords.lng, newCoords.lng), Math.max(oldCoords.lat, newCoords.lat)],
+              ],
+              { padding: 120, maxZoom: 14, duration: 700 },
+            );
+          }
+        },
         error: () => this.editDetailLoading.set(false),
       });
     }
@@ -872,6 +935,21 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     } else {
       this.submissionsService.approveEdit(detail._id).subscribe({
         next: () => {
+          // Patch the map marker with any PlaceMarker-relevant fields that changed
+          const after = detail.after;
+          const placeId = detail.placeId._id;
+          if (after.coordinates || after.name || after.category || after.region) {
+            this.allPlaces.update(places => places.map(p =>
+              p._id === placeId ? {
+                ...p,
+                ...(after.coordinates && { coordinates: after.coordinates }),
+                ...(after.name       && { name: after.name }),
+                ...(after.category   && { category: after.category }),
+                ...(after.region     && { region: after.region }),
+              } : p
+            ));
+            if (this.mapReady) this.refreshSource();
+          }
           const idx = this.selectedEditIdx();
           this.pendingEdits.update(edits => edits.filter(e => e._id !== detail._id));
           this.pendingEditsCount.set(this.pendingEdits().length);
