@@ -33,7 +33,7 @@ import { SuggestService } from '../../core/services/suggest.service';
 
         <div class="edit-header">
           <button mat-icon-button class="back-btn" (click)="goBack()">
-            <mat-icon>arrow_back</mat-icon>
+            <mat-icon>close</mat-icon>
           </button>
           <h1>הצעת מיקום חדש</h1>
         </div>

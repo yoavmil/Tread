@@ -15,6 +15,7 @@ import { CommonModule, Location } from "@angular/common";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
+import { MatDialog } from "@angular/material/dialog";
 import mapboxgl from "mapbox-gl";
 
 import { PlacesService } from "../../core/services/places.service";
@@ -28,6 +29,7 @@ import { FilterBarComponent } from "./filter-bar/filter-bar.component";
 import { PlacePanelComponent } from "./place-panel/place-panel.component";
 import { SearchBarComponent } from "./search-bar/search-bar.component";
 import { EditReviewPanelComponent } from "./edit-review-panel/edit-review-panel.component";
+import { AboutComponent } from "../about/about.component";
 
 const LAYER_UNVISITED = "places-unvisited";
 const LAYER_VISITED = "places-visited";
@@ -97,6 +99,10 @@ const SOURCE_EDITS = "edits";
             (filterChange)="onFilterChange($event)"
             (pendingEditsEnabled)="menuOpen.set(false)"
           />
+          <button class="menu-about-link" (click)="openAbout()">
+            <mat-icon>info_outline</mat-icon>
+            אודות
+          </button>
         </div>
       }
 
@@ -228,6 +234,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     private route: ActivatedRoute,
     private location: Location,
     private router: Router,
+    private dialog: MatDialog,
   ) {
     // Refresh source data whenever visited set changes
     effect(() => {
@@ -966,6 +973,11 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   openNewPlace(lat?: number, lng?: number): void {
     const queryParams = (lat != null && lng != null) ? { lat, lng } : {};
     this.router.navigate(['/new-place'], { queryParams });
+  }
+
+  openAbout(): void {
+    this.menuOpen.set(false);
+    this.dialog.open(AboutComponent, { maxWidth: '600px', width: '90vw' });
   }
 
   ngOnDestroy(): void {

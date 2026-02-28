@@ -33,7 +33,7 @@ import { SubmissionsService } from '../../core/services/submissions.service';
 
         <div class="edit-header">
           <button mat-icon-button class="back-btn" (click)="goBack()">
-            <mat-icon>arrow_back</mat-icon>
+            <mat-icon>close</mat-icon>
           </button>
           <h1>עריכת הצעה</h1>
         </div>

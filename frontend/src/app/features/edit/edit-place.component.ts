@@ -36,7 +36,7 @@ import { SuggestService } from '../../core/services/suggest.service';
         @if (eraseMode) {
           <div class="edit-header">
             <button mat-icon-button class="back-btn" type="button" (click)="exitEraseMode()">
-              <mat-icon>arrow_back</mat-icon>
+              <mat-icon>close</mat-icon>
             </button>
             <h1>הצעת מחיקה</h1>
           </div>
@@ -68,7 +68,7 @@ import { SuggestService } from '../../core/services/suggest.service';
         @if (!eraseMode) {
           <div class="edit-header">
             <button mat-icon-button class="back-btn" (click)="goBack()">
-              <mat-icon>arrow_back</mat-icon>
+              <mat-icon>close</mat-icon>
             </button>
             <h1>הצעת עריכה</h1>
           </div>

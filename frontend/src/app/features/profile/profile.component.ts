@@ -36,7 +36,7 @@ import {
     <div class="profile-page">
       <header class="page-header">
         <a routerLink="/map" mat-icon-button class="back-btn">
-          <mat-icon>arrow_back</mat-icon>
+          <mat-icon>close</mat-icon>
         </a>
         <h1>My Journey</h1>
         <button mat-stroked-button (click)="auth.logout()">Sign out</button>

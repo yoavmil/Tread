@@ -142,6 +142,31 @@
   letter-spacing: 0;
 }
 
+.menu-about-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 16px;
+  padding: 14px 0 0;
+  border: none;
+  border-top: 1px solid #f0f0f0;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: #555;
+  direction: rtl;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: #1a3a2a;
+  }
+
+  &:hover { color: #1a3a2a; }
+}
+
 .map-container {
   flex: 1;
   position: relative;
