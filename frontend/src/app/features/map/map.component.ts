@@ -147,7 +147,7 @@ const SOURCE_EDITS = "edits";
             [isVisited]="false"
             [submissionId]="selectedSubmission()!._id"
             [isApprover]="auth.user()?.role === 'approver'"
-            [submittedByName]="selectedSubmission()!.submittedBy?.displayName"
+            [submittedByName]="selectedSubmission()!.submittedBy.displayName"
             (close)="closeSubmissionPanel()"
             (approve)="onApproveSubmission()"
             (decline)="onDeclineSubmission()"
