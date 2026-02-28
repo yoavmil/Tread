@@ -77,19 +77,6 @@ describe('GET /api/submissions/edit', () => {
     expect(item.after).toBeUndefined();
   });
 
-  test('does not return accepted or declined submissions', async () => {
-    const approver = await createTestUser();
-    const place = await createTestPlace();
-    await createEditSubmission(approver, place, { status: 'accepted' });
-    await createEditSubmission(approver, place, { status: 'declined' });
-
-    const res = await request(app)
-      .get('/api/submissions/edit')
-      .set('Authorization', bearerHeader(approver._id));
-
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(0);
-  });
 });
 
 // ── GET /api/submissions/edit/:id ─────────────────────────────────────────────
@@ -156,18 +143,6 @@ describe('PATCH /api/submissions/edit/:id', () => {
     expect(res.status).toBe(400);
   });
 
-  test('returns 400 when submission is not pending', async () => {
-    const approver = await createTestUser();
-    const place = await createTestPlace();
-    const submission = await createEditSubmission(approver, place, { status: 'accepted' });
-
-    const res = await request(app)
-      .patch(`/api/submissions/edit/${submission._id}`)
-      .set('Authorization', bearerHeader(approver._id))
-      .send({ after: { description: 'New' } });
-    expect(res.status).toBe(400);
-  });
-
   test('updates the after field', async () => {
     const approver = await createTestUser();
     const place = await createTestPlace();
@@ -202,18 +177,7 @@ describe('POST /api/submissions/edit/:id/approve', () => {
     expect(res.status).toBe(404);
   });
 
-  test('returns 400 when submission is already reviewed', async () => {
-    const approver = await createTestUser();
-    const place = await createTestPlace();
-    const submission = await createEditSubmission(approver, place, { status: 'declined' });
-
-    const res = await request(app)
-      .post(`/api/submissions/edit/${submission._id}/approve`)
-      .set('Authorization', bearerHeader(approver._id));
-    expect(res.status).toBe(400);
-  });
-
-  test('applies after fields to the Place and marks submission as accepted', async () => {
+  test('applies after fields to the Place and deletes the submission', async () => {
     const approver = await createTestUser();
     const place = await createTestPlace();
     const submission = await createEditSubmission(approver, place, {
@@ -232,8 +196,8 @@ describe('POST /api/submissions/edit/:id/approve', () => {
     expect(updatedPlace.description).toBe('תיאור שאושר');
     expect(updatedPlace.externalUrl).toBe('https://example.com');
 
-    const updatedSubmission = await EditSubmission.findById(submission._id);
-    expect(updatedSubmission.status).toBe('accepted');
+    const deletedSubmission = await EditSubmission.findById(submission._id);
+    expect(deletedSubmission).toBeNull();
   });
 });
 
@@ -245,18 +209,7 @@ describe('POST /api/submissions/edit/:id/decline', () => {
     expect(res.status).toBe(401);
   });
 
-  test('returns 400 when submission is already reviewed', async () => {
-    const approver = await createTestUser();
-    const place = await createTestPlace();
-    const submission = await createEditSubmission(approver, place, { status: 'accepted' });
-
-    const res = await request(app)
-      .post(`/api/submissions/edit/${submission._id}/decline`)
-      .set('Authorization', bearerHeader(approver._id));
-    expect(res.status).toBe(400);
-  });
-
-  test('marks the submission as declined', async () => {
+  test('deletes the submission when declined', async () => {
     const approver = await createTestUser();
     const place = await createTestPlace();
     const submission = await createEditSubmission(approver, place);
@@ -268,8 +221,8 @@ describe('POST /api/submissions/edit/:id/decline', () => {
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
 
-    const updated = await EditSubmission.findById(submission._id);
-    expect(updated.status).toBe('declined');
+    const deleted = await EditSubmission.findById(submission._id);
+    expect(deleted).toBeNull();
   });
 
   test('does not modify the Place when declining', async () => {

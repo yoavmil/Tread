@@ -13,7 +13,7 @@ router.use(requireAuth, requireApprover);
 
 // GET /api/submissions/new — list pending new location submissions
 router.get('/new', async (req, res) => {
-  const submissions = await NewSubmission.find({ status: 'pending' })
+  const submissions = await NewSubmission.find()
     .populate('submittedBy', 'displayName email')
     .sort({ createdAt: -1 })
     .lean();
@@ -38,22 +38,16 @@ router.patch('/new/:id', async (req, res) => {
 
   const submission = await NewSubmission.findById(req.params.id);
   if (!submission) return res.status(404).json({ error: 'Submission not found' });
-  if (submission.status !== 'pending') {
-    return res.status(400).json({ error: 'Submission has already been reviewed' });
-  }
 
   submission.placeData = placeData;
   await submission.save();
   res.json({ ok: true });
 });
 
-// POST /api/submissions/new/:id/approve — create Place and mark accepted
+// POST /api/submissions/new/:id/approve — create Place and delete submission
 router.post('/new/:id/approve', async (req, res) => {
   const submission = await NewSubmission.findById(req.params.id);
   if (!submission) return res.status(404).json({ error: 'Submission not found' });
-  if (submission.status !== 'pending') {
-    return res.status(400).json({ error: 'Submission has already been reviewed' });
-  }
 
   let place;
   try {
@@ -65,22 +59,17 @@ router.post('/new/:id/approve', async (req, res) => {
     throw err;
   }
 
-  submission.status = 'accepted';
-  await submission.save();
+  await NewSubmission.findByIdAndDelete(submission._id);
 
   res.json({ ok: true, placeId: place._id });
 });
 
-// POST /api/submissions/new/:id/decline — mark declined
+// POST /api/submissions/new/:id/decline — delete submission
 router.post('/new/:id/decline', async (req, res) => {
   const submission = await NewSubmission.findById(req.params.id);
   if (!submission) return res.status(404).json({ error: 'Submission not found' });
-  if (submission.status !== 'pending') {
-    return res.status(400).json({ error: 'Submission has already been reviewed' });
-  }
 
-  submission.status = 'declined';
-  await submission.save();
+  await NewSubmission.findByIdAndDelete(submission._id);
   res.json({ ok: true });
 });
 
@@ -88,7 +77,7 @@ router.post('/new/:id/decline', async (req, res) => {
 
 // GET /api/submissions/edit — list pending edit submissions (id + summary only)
 router.get('/edit', async (req, res) => {
-  const submissions = await EditSubmission.find({ status: 'pending' })
+  const submissions = await EditSubmission.find()
     .select('_id placeId submittedBy createdAt')
     .populate('submittedBy', 'displayName email')
     .populate('placeId', 'name')
@@ -114,40 +103,29 @@ router.patch('/edit/:id', async (req, res) => {
 
   const submission = await EditSubmission.findById(req.params.id);
   if (!submission) return res.status(404).json({ error: 'Submission not found' });
-  if (submission.status !== 'pending') {
-    return res.status(400).json({ error: 'Submission has already been reviewed' });
-  }
 
   submission.after = after;
   await submission.save();
   res.json({ ok: true });
 });
 
-// POST /api/submissions/edit/:id/approve — apply `after` to the Place and mark accepted
+// POST /api/submissions/edit/:id/approve — apply `after` to the Place and delete submission
 router.post('/edit/:id/approve', async (req, res) => {
   const submission = await EditSubmission.findById(req.params.id);
   if (!submission) return res.status(404).json({ error: 'Submission not found' });
-  if (submission.status !== 'pending') {
-    return res.status(400).json({ error: 'Submission has already been reviewed' });
-  }
 
   await Place.findByIdAndUpdate(submission.placeId, { $set: submission.after });
-  submission.status = 'accepted';
-  await submission.save();
+  await EditSubmission.findByIdAndDelete(submission._id);
 
   res.json({ ok: true, placeId: submission.placeId });
 });
 
-// POST /api/submissions/edit/:id/decline — mark declined
+// POST /api/submissions/edit/:id/decline — delete submission
 router.post('/edit/:id/decline', async (req, res) => {
   const submission = await EditSubmission.findById(req.params.id);
   if (!submission) return res.status(404).json({ error: 'Submission not found' });
-  if (submission.status !== 'pending') {
-    return res.status(400).json({ error: 'Submission has already been reviewed' });
-  }
 
-  submission.status = 'declined';
-  await submission.save();
+  await EditSubmission.findByIdAndDelete(submission._id);
   res.json({ ok: true });
 });
 
