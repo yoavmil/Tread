@@ -4,7 +4,13 @@
       "Bash(npm run seed:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "WebFetch(domain:www.parks.org.il)"
+      "WebFetch(domain:www.parks.org.il)",
+      "Bash(npx jest:*)",
+      "WebFetch(domain:api.govmap.gov.il)",
+      "WebFetch(domain:www.govmap.gov.il)",
+      "WebFetch(domain:github.com)",
+      "Bash(npx ng build:*)",
+      "WebFetch(domain:docs.mapbox.com)"
     ]
   }
 }

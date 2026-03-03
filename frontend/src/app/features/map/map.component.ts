@@ -176,10 +176,10 @@ const SOURCE_COORD_NEW = "coord-new";
         }
 
         @if (contextMenu()) {
-          <div class="ctx-backdrop" (click)="contextMenu.set(null)"></div>
           <div class="ctx-menu"
             [style.left.px]="contextMenu()!.x"
-            [style.top.px]="contextMenu()!.y">
+            [style.top.px]="contextMenu()!.y"
+            (click)="$event.stopPropagation()">
             <button class="ctx-item" (click)="onContextNewPlace()">
               <mat-icon>add_location</mat-icon>
               הצע מקום חדש כאן
@@ -367,6 +367,10 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     let startPoint = { x: 0, y: 0 };
 
     canvas.addEventListener('touchstart', (e: TouchEvent) => {
+      // Cancel any running timer first (handles second-finger arriving mid-press)
+      if (timer) { clearTimeout(timer); timer = null; }
+      // Only track single-finger presses
+      if (e.touches.length !== 1) return;
       const t = e.touches[0];
       const rect = canvas.getBoundingClientRect();
       startPoint = { x: t.clientX - rect.left, y: t.clientY - rect.top };
