@@ -200,6 +200,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private map!: mapboxgl.Map;
   private mapReady = false;
+  private suppressNextMapClick = false;
 
   loading = signal(true);
   allPlaces = signal<PlaceMarker[]>([]);
@@ -354,6 +355,52 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
         lng: parseFloat(lng.toFixed(6)),
       });
     });
+
+    if ('ontouchstart' in window) {
+      this.setupMobileLongPress();
+    }
+  }
+
+  private setupMobileLongPress(): void {
+    const canvas = this.map.getCanvas();
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let startPoint = { x: 0, y: 0 };
+
+    canvas.addEventListener('touchstart', (e: TouchEvent) => {
+      const t = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      startPoint = { x: t.clientX - rect.left, y: t.clientY - rect.top };
+      timer = setTimeout(() => {
+        timer = null;
+        const lngLat = this.map.unproject([startPoint.x, startPoint.y]);
+        this.suppressNextMapClick = true;
+        this.contextMenu.set({
+          x: startPoint.x,
+          y: startPoint.y,
+          lat: parseFloat(lngLat.lat.toFixed(6)),
+          lng: parseFloat(lngLat.lng.toFixed(6)),
+        });
+        // Reset flag after the synthetic click that may follow touchend
+        setTimeout(() => { this.suppressNextMapClick = false; }, 400);
+      }, 600);
+    }, { passive: true });
+
+    canvas.addEventListener('touchmove', (e: TouchEvent) => {
+      if (!timer) return;
+      const t = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      const dx = Math.abs(t.clientX - rect.left - startPoint.x);
+      const dy = Math.abs(t.clientY - rect.top - startPoint.y);
+      if (dx > 10 || dy > 10) { clearTimeout(timer); timer = null; }
+    }, { passive: true });
+
+    canvas.addEventListener('touchend', () => {
+      if (timer) { clearTimeout(timer); timer = null; }
+    }, { passive: true });
+
+    canvas.addEventListener('touchcancel', () => {
+      if (timer) { clearTimeout(timer); timer = null; }
+    }, { passive: true });
   }
 
   // ── GeoJSON helpers ────────────────────────────────────────────────────────
@@ -547,6 +594,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Click on empty map = close panels + context menu
     this.map.on("click", (e) => {
+      if (this.suppressNextMapClick) return;
       this.contextMenu.set(null);
       const layers: string[] = [LAYER_UNVISITED, LAYER_VISITED];
       if (this.map.getLayer(LAYER_SUBMISSIONS)) layers.push(LAYER_SUBMISSIONS);
