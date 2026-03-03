@@ -345,6 +345,8 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     });
 
+    this.map.on("movestart", () => this.contextMenu.set(null));
+
     this.map.on("contextmenu", (e) => {
       e.preventDefault();
       const { lat, lng } = e.lngLat;
