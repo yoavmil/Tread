@@ -710,8 +710,8 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     ]).subscribe(([newItems, editItems, eraseItems]) => {
       const combined: UnifiedReviewItem[] = [
         ...newItems.map(n => ({ type: 'new' as const, _id: n._id, placeName: n.placeData.name, submittedBy: n.submittedBy, createdAt: n.createdAt })),
-        ...editItems.map(e => ({ type: 'edit' as const, _id: e._id, placeId: e.placeId, submittedBy: e.submittedBy, createdAt: e.createdAt })),
-        ...eraseItems.map(e => ({ type: 'erase' as const, _id: e._id, placeId: e.placeId, reason: e.reason, submittedBy: e.submittedBy, createdAt: e.createdAt })),
+        ...editItems.filter(e => e.placeId).map(e => ({ type: 'edit' as const, _id: e._id, placeId: e.placeId, submittedBy: e.submittedBy, createdAt: e.createdAt })),
+        ...eraseItems.filter(e => e.placeId).map(e => ({ type: 'erase' as const, _id: e._id, placeId: e.placeId, reason: e.reason, submittedBy: e.submittedBy, createdAt: e.createdAt })),
       ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       this.unifiedEdits.set(combined);
     });
@@ -1176,7 +1176,9 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onReviewEraseApproved(placeId: string): void {
     this.allPlaces.update(places => places.filter(p => p._id !== placeId));
-    if (this.mapReady) this.refreshSource();
+    this.pendingEdits.update(items => items.filter(i => i.placeId._id !== placeId));
+    this.pendingEditsCount.set(this.pendingEdits().length);
+    if (this.mapReady) { this.refreshSource(); this.refreshEditsSource(); }
   }
 
   onReviewEditApproved({ placeId, after }: { placeId: string; after: Partial<Place> }): void {
@@ -1192,6 +1194,9 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       ));
       if (this.mapReady) this.refreshSource();
     }
+    this.pendingEdits.update(items => items.filter(i => i.placeId._id !== placeId));
+    this.pendingEditsCount.set(this.pendingEdits().length);
+    if (this.mapReady) this.refreshEditsSource();
   }
 
   onReviewItemRemoved(id: string): void {

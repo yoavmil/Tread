@@ -545,12 +545,12 @@ export class ReviewsComponent implements OnChanges {
     } else if (item.type === 'edit') {
       const detail = this.loadedDetail as { type: 'edit'; submission: EditSubmission };
       this.submissionsService.approveEdit(item._id).subscribe({
-        next: () => { this.editApproved.emit({ placeId: item.placeId._id, after: detail.submission.after }); this.removeCurrentItem(); },
+        next: () => { this.editApproved.emit({ placeId: item.placeId._id, after: detail.submission.after }); this.removeItemsForPlace(item.placeId._id); },
         error: () => { this.approving = false; },
       });
     } else {
       this.submissionsService.approveErase(item._id).subscribe({
-        next: () => { this.eraseApproved.emit(item.placeId._id); this.removeCurrentItem(); },
+        next: () => { this.eraseApproved.emit(item.placeId._id); this.removeItemsForPlace(item.placeId._id); },
         error: () => { this.approving = false; },
       });
     }
@@ -586,11 +586,27 @@ export class ReviewsComponent implements OnChanges {
     this.loadCurrentDetail();
   }
 
+  private removeItemsForPlace(placeId: string): void {
+    const toRemove = this.internalItems.filter(i =>
+      (i.type === 'edit' || i.type === 'erase') && i.placeId._id === placeId
+    );
+    toRemove.forEach(i => this.itemRemoved.emit(i._id));
+    this.internalItems = this.internalItems.filter(i =>
+      !((i.type === 'edit' || i.type === 'erase') && i.placeId._id === placeId)
+    );
+    if (this.internalItems.length === 0) {
+      this.close.emit();
+      return;
+    }
+    this.currentIdx = Math.min(this.currentIdx, this.internalItems.length - 1);
+    this.loadCurrentDetail();
+  }
+
   // Edit comparison helpers
   hasChange(key: string): boolean {
     if (this.loadedDetail?.type !== 'edit') return false;
     const { submission } = this.loadedDetail;
-    const after = submission.after as Record<string, unknown>;
+    const after = (submission.after ?? {}) as Record<string, unknown>;
     if (!(key in after)) return false;
     return JSON.stringify((submission.before as Record<string, unknown>)[key]) !== JSON.stringify(after[key]);
   }
@@ -603,7 +619,7 @@ export class ReviewsComponent implements OnChanges {
   getAfterValue(key: string): unknown {
     if (this.loadedDetail?.type !== 'edit') return undefined;
     const { submission } = this.loadedDetail;
-    const after = submission.after as Record<string, unknown>;
+    const after = (submission.after ?? {}) as Record<string, unknown>;
     return key in after ? after[key] : (submission.before as Record<string, unknown>)[key];
   }
 

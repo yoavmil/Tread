@@ -315,7 +315,7 @@ export class EditReviewPanelComponent {
 
   hasChange(key: string): boolean {
     if (this.detail.type === 'erase') return false;
-    const after = this.detail.after as Record<string, unknown>;
+    const after = (this.detail.after ?? {}) as Record<string, unknown>;
     if (!(key in after)) return false;
     return JSON.stringify((this.detail.before as Record<string, unknown>)[key])
       !== JSON.stringify(after[key]);
@@ -328,7 +328,7 @@ export class EditReviewPanelComponent {
 
   getAfterValue(key: string): unknown {
     if (this.detail.type === 'erase') return undefined;
-    const after = this.detail.after as Record<string, unknown>;
+    const after = (this.detail.after ?? {}) as Record<string, unknown>;
     return key in after
       ? after[key]
       : (this.detail.before as Record<string, unknown>)[key];

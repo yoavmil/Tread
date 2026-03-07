@@ -64,12 +64,9 @@ router.post('/new/:id/approve', async (req, res) => {
   res.json({ ok: true, placeId: place._id });
 });
 
-// POST /api/submissions/new/:id/decline — delete submission
+// POST /api/submissions/new/:id/decline — delete submission (idempotent)
 router.post('/new/:id/decline', async (req, res) => {
-  const submission = await NewSubmission.findById(req.params.id);
-  if (!submission) return res.status(404).json({ error: 'Submission not found' });
-
-  await NewSubmission.findByIdAndDelete(submission._id);
+  await NewSubmission.findByIdAndDelete(req.params.id);
   res.json({ ok: true });
 });
 
@@ -114,18 +111,18 @@ router.post('/edit/:id/approve', async (req, res) => {
   const submission = await EditSubmission.findById(req.params.id);
   if (!submission) return res.status(404).json({ error: 'Submission not found' });
 
-  await Place.findByIdAndUpdate(submission.placeId, { $set: submission.after });
-  await EditSubmission.findByIdAndDelete(submission._id);
+  const placeId = submission.placeId;
+  await Place.findByIdAndUpdate(placeId, { $set: submission.after });
+  // Delete all edit and erase submissions for this place (includes the approved one)
+  await EditSubmission.deleteMany({ placeId });
+  await EraseSubmission.deleteMany({ placeId });
 
-  res.json({ ok: true, placeId: submission.placeId });
+  res.json({ ok: true, placeId });
 });
 
-// POST /api/submissions/edit/:id/decline — delete submission
+// POST /api/submissions/edit/:id/decline — delete submission (idempotent)
 router.post('/edit/:id/decline', async (req, res) => {
-  const submission = await EditSubmission.findById(req.params.id);
-  if (!submission) return res.status(404).json({ error: 'Submission not found' });
-
-  await EditSubmission.findByIdAndDelete(submission._id);
+  await EditSubmission.findByIdAndDelete(req.params.id);
   res.json({ ok: true });
 });
 
@@ -160,17 +157,16 @@ router.post('/erase/:id/approve', async (req, res) => {
   const placeId = submission.placeId;
   await Place.findByIdAndDelete(placeId);
   await User.updateMany({ visitedPlaces: placeId }, { $pull: { visitedPlaces: placeId } });
-  await EraseSubmission.findByIdAndDelete(submission._id);
+  // Delete all edit and erase submissions for this place (includes the approved one)
+  await EraseSubmission.deleteMany({ placeId });
+  await EditSubmission.deleteMany({ placeId });
 
   res.json({ ok: true, placeId });
 });
 
-// POST /api/submissions/erase/:id/decline — delete submission, leave Place intact
+// POST /api/submissions/erase/:id/decline — delete submission, leave Place intact (idempotent)
 router.post('/erase/:id/decline', async (req, res) => {
-  const submission = await EraseSubmission.findById(req.params.id);
-  if (!submission) return res.status(404).json({ error: 'Submission not found' });
-
-  await EraseSubmission.findByIdAndDelete(submission._id);
+  await EraseSubmission.findByIdAndDelete(req.params.id);
   res.json({ ok: true });
 });
 
