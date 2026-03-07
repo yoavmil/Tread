@@ -8,7 +8,7 @@ import { EditSubmissionSummary, EditSubmission, EraseDetail } from '../../models
 export class SubmissionsService {
   constructor(private http: HttpClient) {}
 
-  getPending() {
+  getPendingNew() {
     return this.http.get<NewSubmission[]>('/api/submissions/new');
   }
 

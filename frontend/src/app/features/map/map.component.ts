@@ -23,13 +23,14 @@ import { AuthService } from "../../core/services/auth.service";
 import { SubmissionsService } from "../../core/services/submissions.service";
 import { Place, PlaceMarker, PlaceCategory, CATEGORY_LABELS, FilterState } from "../../models/place.model";
 import { NewSubmission } from "../../models/new-submission.model";
-import { ReviewItemSummary, ReviewDetail } from "../../models/edit-submission.model";
+import { ReviewItemSummary, ReviewDetail, UnifiedReviewItem } from "../../models/edit-submission.model";
 import { environment } from "../../../environments/environment";
 import { FilterBarComponent } from "./filter-bar/filter-bar.component";
 import { PlacePanelComponent } from "./place-panel/place-panel.component";
 import { SearchBarComponent } from "./search-bar/search-bar.component";
 import { EditReviewPanelComponent } from "./edit-review-panel/edit-review-panel.component";
 import { AboutComponent } from "../about/about.component";
+import { ReviewsComponent } from "./reviews/reviews.component";
 
 const LAYER_UNVISITED = "places-unvisited";
 const LAYER_VISITED = "places-visited";
@@ -55,6 +56,7 @@ const SOURCE_COORD_NEW = "coord-new";
     PlacePanelComponent,
     SearchBarComponent,
     EditReviewPanelComponent,
+    ReviewsComponent,
   ],
   template: `
     <div class="map-page">
@@ -101,6 +103,7 @@ const SOURCE_COORD_NEW = "coord-new";
             (filterChange)="onFilterChange($event)"
             (pendingEditsEnabled)="menuOpen.set(false)"
           />
+          <app-reviews [count]="unifiedEditsCount()" />
           <button class="menu-about-link" (click)="openAbout()">
             <mat-icon>info_outline</mat-icon>
             אודות
@@ -213,6 +216,8 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   selectedEditIdx = signal(-1);
   selectedEditDetail = signal<ReviewDetail | null>(null);
   editDetailLoading = signal(false);
+  unifiedEdits = signal<UnifiedReviewItem[]>([]);
+  unifiedEditsCount = computed(() => this.unifiedEdits().length);
   activeFilters = signal<FilterState>({
     categories: Object.keys(CATEGORY_LABELS) as PlaceCategory[],
     region: null,
@@ -306,6 +311,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
         this.submissionsService.getPendingErases(),
       ]).subscribe(([edits, erases]) =>
         this.pendingEditsCount.set(edits.length + erases.length));
+      this.loadUnifiedEdits();
     }
   }
 
@@ -678,8 +684,23 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     source?.setData(this.buildSubmissionsGeoJSON(this.pendingSubmissions()));
   }
 
+  private loadUnifiedEdits(): void {
+    forkJoin([
+      this.submissionsService.getPendingNew(),
+      this.submissionsService.getPendingEdits(),
+      this.submissionsService.getPendingErases(),
+    ]).subscribe(([newItems, editItems, eraseItems]) => {
+      const combined: UnifiedReviewItem[] = [
+        ...newItems.map(n => ({ type: 'new' as const, _id: n._id, placeName: n.placeData.name, submittedBy: n.submittedBy, createdAt: n.createdAt })),
+        ...editItems.map(e => ({ type: 'edit' as const, _id: e._id, placeId: e.placeId, submittedBy: e.submittedBy, createdAt: e.createdAt })),
+        ...eraseItems.map(e => ({ type: 'erase' as const, _id: e._id, placeId: e.placeId, reason: e.reason, submittedBy: e.submittedBy, createdAt: e.createdAt })),
+      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      this.unifiedEdits.set(combined);
+    });
+  }
+
   private fetchAndShowSubmissions(): void {
-    this.submissionsService.getPending().subscribe((subs) => {
+    this.submissionsService.getPendingNew().subscribe((subs) => {
       this.pendingSubmissions.set(subs);
       this.initSubmissionsLayer();
       if (this.map.getLayer(LAYER_SUBMISSIONS)) {
