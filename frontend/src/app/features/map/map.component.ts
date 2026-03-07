@@ -103,7 +103,12 @@ const SOURCE_COORD_NEW = "coord-new";
             (filterChange)="onFilterChange($event)"
             (pendingEditsEnabled)="menuOpen.set(false)"
           />
-          <app-reviews [count]="unifiedEditsCount()" />
+          @if (unifiedEditsCount() > 0) {
+            <button class="menu-about-link" (click)="openReviews()">
+              <mat-icon>rate_review</mat-icon>
+              {{ unifiedEditsCount() }} ממתינים לבדיקה
+            </button>
+          }
           <button class="menu-about-link" (click)="openAbout()">
             <mat-icon>info_outline</mat-icon>
             אודות
@@ -178,6 +183,18 @@ const SOURCE_COORD_NEW = "coord-new";
           />
         }
 
+        @if (reviewsOpen()) {
+          <app-reviews
+            [items]="unifiedEdits()"
+            (close)="reviewsOpen.set(false)"
+            (newPlaceApproved)="onReviewNewApproved($event)"
+            (eraseApproved)="onReviewEraseApproved($event)"
+            (editApproved)="onReviewEditApproved($event)"
+            (itemRemoved)="onReviewItemRemoved($event)"
+            class="review-panel"
+          />
+        }
+
         @if (contextMenu()) {
           <div class="ctx-menu"
             [style.left.px]="contextMenu()!.x"
@@ -226,6 +243,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     showPendingEdits: false,
   });
   menuOpen = signal(false);
+  reviewsOpen = signal(false);
   contextMenu = signal<{ x: number; y: number; lat: number; lng: number } | null>(null);
 
   visitedCount = computed(
@@ -269,7 +287,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       } else {
         this.hideSubmissionsLayer();
       }
-    });
+    }, { allowSignalWrites: true });
 
     // Show/hide edits layer based on filter
     effect(() => {
@@ -280,7 +298,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       } else {
         this.hideEditsLayer();
       }
-    });
+    }, { allowSignalWrites: true });
 
     // Clear the proposed-position marker whenever no edit is being reviewed
     effect(() => {
@@ -1141,6 +1159,43 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   openAbout(): void {
     this.menuOpen.set(false);
     this.dialog.open(AboutComponent, { maxWidth: '600px', width: '90vw' });
+  }
+
+  openReviews(): void {
+    this.menuOpen.set(false);
+    this.reviewsOpen.set(true);
+  }
+
+  onReviewNewApproved(placeId: string): void {
+    this.placesService.getById(placeId).subscribe((place) => {
+      const marker: PlaceMarker = { _id: place._id, name: place.name, category: place.category, region: place.region, coordinates: place.coordinates };
+      this.allPlaces.update((places) => [...places, marker]);
+      if (this.mapReady) this.refreshSource();
+    });
+  }
+
+  onReviewEraseApproved(placeId: string): void {
+    this.allPlaces.update(places => places.filter(p => p._id !== placeId));
+    if (this.mapReady) this.refreshSource();
+  }
+
+  onReviewEditApproved({ placeId, after }: { placeId: string; after: Partial<Place> }): void {
+    if (after.coordinates || after.name || after.category || after.region) {
+      this.allPlaces.update(places => places.map(p =>
+        p._id === placeId ? {
+          ...p,
+          ...(after.coordinates && { coordinates: after.coordinates }),
+          ...(after.name       && { name: after.name }),
+          ...(after.category   && { category: after.category }),
+          ...(after.region     && { region: after.region }),
+        } : p
+      ));
+      if (this.mapReady) this.refreshSource();
+    }
+  }
+
+  onReviewItemRemoved(id: string): void {
+    this.unifiedEdits.update(items => items.filter(i => i._id !== id));
   }
 
   ngOnDestroy(): void {
