@@ -186,11 +186,12 @@ const SOURCE_COORD_NEW = "coord-new";
         @if (reviewsOpen()) {
           <app-reviews
             [items]="unifiedEdits()"
-            (close)="reviewsOpen.set(false)"
+            (close)="onReviewsClose()"
             (newPlaceApproved)="onReviewNewApproved($event)"
             (eraseApproved)="onReviewEraseApproved($event)"
             (editApproved)="onReviewEditApproved($event)"
             (itemRemoved)="onReviewItemRemoved($event)"
+            (coordChange)="onReviewCoordChange($event)"
             class="review-panel"
           />
         }
@@ -1201,6 +1202,23 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onReviewItemRemoved(id: string): void {
     this.unifiedEdits.update(items => items.filter(i => i._id !== id));
+  }
+
+  onReviewsClose(): void {
+    this.reviewsOpen.set(false);
+    this.clearCoordChange();
+  }
+
+  onReviewCoordChange(coords: { oldCoords: { lat: number; lng: number }; newCoords: { lat: number; lng: number } } | null): void {
+    if (!coords) { this.clearCoordChange(); return; }
+    this.showCoordChange(coords.newCoords);
+    this.map.fitBounds(
+      [
+        [Math.min(coords.oldCoords.lng, coords.newCoords.lng), Math.min(coords.oldCoords.lat, coords.newCoords.lat)],
+        [Math.max(coords.oldCoords.lng, coords.newCoords.lng), Math.max(coords.oldCoords.lat, coords.newCoords.lat)],
+      ],
+      { padding: 120, maxZoom: 14, duration: 700 },
+    );
   }
 
   ngOnDestroy(): void {

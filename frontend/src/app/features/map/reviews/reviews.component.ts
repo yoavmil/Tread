@@ -452,6 +452,7 @@ export class ReviewsComponent implements OnChanges {
   @Output() eraseApproved = new EventEmitter<string>();
   @Output() editApproved = new EventEmitter<{ placeId: string; after: Partial<Place> }>();
   @Output() itemRemoved = new EventEmitter<string>();
+  @Output() coordChange = new EventEmitter<{ oldCoords: { lat: number; lng: number }; newCoords: { lat: number; lng: number } } | null>();
 
   internalItems: UnifiedReviewItem[] = [];
   currentIdx = 0;
@@ -499,12 +500,22 @@ export class ReviewsComponent implements OnChanges {
 
     if (item.type === 'new') {
       this.submissionsService.getById(item._id).subscribe({
-        next: (sub) => { this.loadedDetail = { type: 'new', submission: sub }; this.detailLoading = false; },
+        next: (sub) => { this.loadedDetail = { type: 'new', submission: sub }; this.detailLoading = false; this.coordChange.emit(null); },
         error: () => { this.detailLoading = false; },
       });
     } else if (item.type === 'edit') {
       this.submissionsService.getEditById(item._id).subscribe({
-        next: (sub) => { this.loadedDetail = { type: 'edit', submission: sub }; this.detailLoading = false; },
+        next: (sub) => {
+          this.loadedDetail = { type: 'edit', submission: sub };
+          this.detailLoading = false;
+          const oldCoords = (sub.before as Partial<Place>).coordinates;
+          const newCoords = (sub.after as Partial<Place>)?.coordinates;
+          if (oldCoords && newCoords && (oldCoords.lat !== newCoords.lat || oldCoords.lng !== newCoords.lng)) {
+            this.coordChange.emit({ oldCoords, newCoords });
+          } else {
+            this.coordChange.emit(null);
+          }
+        },
         error: () => { this.detailLoading = false; },
       });
     } else {
@@ -512,7 +523,7 @@ export class ReviewsComponent implements OnChanges {
         this.submissionsService.getEraseById(item._id),
         this.placesService.getById(item.placeId._id),
       ]).subscribe({
-        next: ([erase, place]) => { this.loadedDetail = { type: 'erase', erase, place }; this.detailLoading = false; },
+        next: ([erase, place]) => { this.loadedDetail = { type: 'erase', erase, place }; this.detailLoading = false; this.coordChange.emit(null); },
         error: () => { this.detailLoading = false; },
       });
     }
@@ -579,6 +590,7 @@ export class ReviewsComponent implements OnChanges {
     this.itemRemoved.emit(item._id);
     this.internalItems = this.internalItems.filter(i => i._id !== item._id);
     if (this.internalItems.length === 0) {
+      this.coordChange.emit(null);
       this.close.emit();
       return;
     }
@@ -595,6 +607,7 @@ export class ReviewsComponent implements OnChanges {
       !((i.type === 'edit' || i.type === 'erase') && i.placeId._id === placeId)
     );
     if (this.internalItems.length === 0) {
+      this.coordChange.emit(null);
       this.close.emit();
       return;
     }
