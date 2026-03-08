@@ -50,9 +50,13 @@ export class AuthService {
     this._user.set({ ...user, visitedPlaces: user.visitedPlaces.filter(id => id !== placeId) });
   }
 
-  logout(): void {
+  clearSession(): void {
     localStorage.removeItem(TOKEN_KEY);
     this._user.set(null);
-    this.router.navigate(['/login']);
+  }
+
+  logout(): void {
+    this.clearSession();
+    this.router.navigate(['/map']);
   }
 }

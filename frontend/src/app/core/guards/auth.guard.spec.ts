@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, UrlTree } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { MatDialog } from '@angular/material/dialog';
 import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import { authGuard } from './auth.guard';
@@ -20,9 +21,11 @@ function makeMockAuth(opts: {
     loadUser: jest.fn().mockReturnValue(
       loadResult === 'ok' ? of(FAKE_USER) : throwError(() => new Error('401'))
     ),
-    logout: jest.fn(),
+    clearSession: jest.fn(),
   };
 }
+
+const mockDialog = { open: jest.fn() };
 
 async function runGuard(mock: ReturnType<typeof makeMockAuth>) {
   TestBed.configureTestingModule({
@@ -31,6 +34,7 @@ async function runGuard(mock: ReturnType<typeof makeMockAuth>) {
       provideHttpClient(),
       provideHttpClientTesting(),
       { provide: AuthService, useValue: mock },
+      { provide: MatDialog, useValue: mockDialog },
     ],
   });
   return TestBed.runInInjectionContext(() =>
@@ -39,12 +43,14 @@ async function runGuard(mock: ReturnType<typeof makeMockAuth>) {
 }
 
 describe('authGuard', () => {
+  beforeEach(() => mockDialog.open.mockClear());
   afterEach(() => TestBed.resetTestingModule());
 
-  it('redirects to /login when there is no token', async () => {
+  it('opens login dialog and redirects to /map when there is no token', async () => {
     const result = await runGuard(makeMockAuth({ token: null }));
+    expect(mockDialog.open).toHaveBeenCalled();
     expect(result).toBeInstanceOf(UrlTree);
-    expect((result as UrlTree).toString()).toBe('/login');
+    expect((result as UrlTree).toString()).toBe('/map');
   });
 
   it('returns true immediately when token + user are already loaded', async () => {
@@ -61,11 +67,12 @@ describe('authGuard', () => {
     expect(mock.loadUser).toHaveBeenCalled();
   });
 
-  it('calls logout() and redirects to /login when loadUser() fails', async () => {
+  it('calls clearSession(), opens login dialog and redirects to /map when loadUser() fails', async () => {
     const mock = makeMockAuth({ token: 'tok', userLoaded: false, loadResult: 'fail' });
     const result = await runGuard(mock);
-    expect(mock.logout).toHaveBeenCalled();
+    expect(mock.clearSession).toHaveBeenCalled();
+    expect(mockDialog.open).toHaveBeenCalled();
     expect(result).toBeInstanceOf(UrlTree);
-    expect((result as UrlTree).toString()).toBe('/login');
+    expect((result as UrlTree).toString()).toBe('/map');
   });
 });

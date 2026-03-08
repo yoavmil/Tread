@@ -2,7 +2,6 @@
 
 - allow feedback from users
 - add more locations, think of an API to upload a csv.
-- change landing page, to see the map, and only when the user wants to update his visited status request to login
 - replace mapbox with [govmap](https://api.govmap.gov.il/docs/intro)
 - add option for one image per location
 - allow user to erase himself, then updated all his visited locations.
@@ -12,6 +11,7 @@
 - when zoom out combine several locations to 1 circle with a count inside
 - display the number of edits
 - heatmap of visits
+- browser cache for locations details
 
 ## Role promotion — how to make a user an approver
 
