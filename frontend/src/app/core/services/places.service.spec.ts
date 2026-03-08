@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { PlacesService } from './places.service';
+import { Place } from '../../models/place.model';
 
 describe('PlacesService', () => {
   let service: PlacesService;
@@ -43,6 +44,30 @@ describe('PlacesService', () => {
     it('calls /api/places/:id', () => {
       service.getById('abc123').subscribe();
       http.expectOne('/api/places/abc123').flush({});
+    });
+
+    it('returns cached place without HTTP on second call', () => {
+      const mockPlace = { _id: 'abc123', name: 'Test' } as Place;
+
+      service.getById('abc123').subscribe();
+      http.expectOne('/api/places/abc123').flush(mockPlace);
+
+      let result: Place | undefined;
+      service.getById('abc123').subscribe(p => (result = p));
+      http.expectNone('/api/places/abc123');
+      expect(result).toEqual(mockPlace);
+    });
+
+    it('re-fetches from HTTP after evictCache()', () => {
+      const mockPlace = { _id: 'abc123', name: 'Test' } as Place;
+
+      service.getById('abc123').subscribe();
+      http.expectOne('/api/places/abc123').flush(mockPlace);
+
+      service.evictCache('abc123');
+
+      service.getById('abc123').subscribe();
+      http.expectOne('/api/places/abc123').flush(mockPlace);
     });
   });
 
