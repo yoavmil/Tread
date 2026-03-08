@@ -200,12 +200,13 @@ describe('POST /api/submissions/erase/:id/decline', () => {
     expect(res.status).toBe(401);
   });
 
-  test('returns 404 for a non-existent submission', async () => {
+  test('returns 200 for a non-existent submission (idempotent)', async () => {
     const approver = await createTestUser();
     const res = await request(app)
       .post('/api/submissions/erase/507f1f77bcf86cd799439011/decline')
       .set('Authorization', bearerHeader(approver._id));
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
   });
 
   test('deletes the submission but leaves the place intact', async () => {

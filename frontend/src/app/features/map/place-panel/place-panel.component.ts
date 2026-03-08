@@ -61,7 +61,7 @@ import { VisitsService } from '../../../core/services/visits.service';
           </a>
         }
 
-        @if (!submissionId && place.visitorsCount) {
+        @if (place.visitorsCount) {
           <p class="visitors-count">
             <mat-icon>group</mat-icon>
             {{ place.visitorsCount }} ביקרו כאן
@@ -70,40 +70,7 @@ import { VisitsService } from '../../../core/services/visits.service';
       </div>
 
       <div class="panel-footer">
-        @if (submissionId) {
-          @if (submittedByName) {
-            <p class="submitted-by">הוגש על ידי: {{ submittedByName }}</p>
-          }
-          <div class="submission-actions">
-            <button
-              mat-stroked-button
-              class="decline-btn"
-              [disabled]="approving || declining"
-              (click)="onDecline()"
-            >
-              @if (declining) {
-                <mat-spinner diameter="18"></mat-spinner>
-              } @else {
-                <mat-icon>close</mat-icon>
-                דחה
-              }
-            </button>
-            <button
-              mat-flat-button
-              color="primary"
-              class="approve-btn"
-              [disabled]="approving || declining"
-              (click)="onApprove()"
-            >
-              @if (approving) {
-                <mat-spinner diameter="18"></mat-spinner>
-              } @else {
-                <mat-icon>check</mat-icon>
-                אשר
-              }
-            </button>
-          </div>
-        } @else if (isVisited) {
+        @if (isVisited) {
           <button
             mat-stroked-button
             class="visit-btn visited"
@@ -281,41 +248,6 @@ import { VisitsService } from '../../../core/services/visits.service';
       height: 18px;
     }
 
-    .submitted-by {
-      font-size: 12px;
-      color: #888;
-      margin: 0 0 8px;
-    }
-
-    .submission-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .decline-btn {
-      flex: 1;
-      height: 44px;
-      font-size: 14px;
-      font-weight: 600;
-      gap: 6px;
-      color: #c62828 !important;
-      border-color: #c62828 !important;
-    }
-
-    .approve-btn {
-      flex: 1;
-      height: 44px;
-      font-size: 14px;
-      font-weight: 600;
-      gap: 6px;
-    }
-
-    .decline-btn mat-icon, .approve-btn mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
-
     .visitors-count {
       display: flex;
       align-items: center;
@@ -331,17 +263,10 @@ import { VisitsService } from '../../../core/services/visits.service';
 export class PlacePanelComponent {
   @Input() place!: Place;
   @Input() isVisited = false;
-  @Input() submissionId?: string;
-  @Input() isApprover = false;
-  @Input() submittedByName?: string;
   @Output() close = new EventEmitter<void>();
   @Output() toggleVisit = new EventEmitter<Place>();
-  @Output() approve = new EventEmitter<void>();
-  @Output() decline = new EventEmitter<void>();
 
   saving = false;
-  approving = false;
-  declining = false;
 
   get categoryLabel(): string {
     return CATEGORY_LABELS[this.place.category];
@@ -384,20 +309,6 @@ export class PlacePanelComponent {
   }
 
   openEdit(): void {
-    if (this.submissionId) {
-      this.router.navigate(['/edit-submission', this.submissionId]);
-    } else {
-      this.router.navigate(['/edit', this.place._id]);
-    }
-  }
-
-  onApprove(): void {
-    this.approving = true;
-    this.approve.emit();
-  }
-
-  onDecline(): void {
-    this.declining = true;
-    this.decline.emit();
+    this.router.navigate(['/edit', this.place._id]);
   }
 }

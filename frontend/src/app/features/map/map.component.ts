@@ -22,25 +22,19 @@ import { PlacesService } from "../../core/services/places.service";
 import { AuthService } from "../../core/services/auth.service";
 import { SubmissionsService } from "../../core/services/submissions.service";
 import { Place, PlaceMarker, PlaceCategory, CATEGORY_LABELS, FilterState } from "../../models/place.model";
-import { NewSubmission } from "../../models/new-submission.model";
-import { ReviewItemSummary, ReviewDetail, UnifiedReviewItem } from "../../models/edit-submission.model";
+import { UnifiedReviewItem } from "../../models/edit-submission.model";
 import { environment } from "../../../environments/environment";
 import { FilterBarComponent } from "./filter-bar/filter-bar.component";
 import { PlacePanelComponent } from "./place-panel/place-panel.component";
 import { SearchBarComponent } from "./search-bar/search-bar.component";
-import { EditReviewPanelComponent } from "./edit-review-panel/edit-review-panel.component";
 import { AboutComponent } from "../about/about.component";
 import { ReviewsComponent } from "./reviews/reviews.component";
 
 const LAYER_UNVISITED = "places-unvisited";
 const LAYER_VISITED = "places-visited";
 const LAYER_SELECTED = "places-selected";
-const LAYER_SUBMISSIONS = "places-submissions";
-const LAYER_EDITS = "places-edits";
 const LAYER_COORD_NEW = "places-coord-new";
 const SOURCE_ID = "places";
-const SOURCE_SUBMISSIONS = "submissions";
-const SOURCE_EDITS = "edits";
 const SOURCE_COORD_NEW = "coord-new";
 
 @Component({
@@ -55,7 +49,6 @@ const SOURCE_COORD_NEW = "coord-new";
     FilterBarComponent,
     PlacePanelComponent,
     SearchBarComponent,
-    EditReviewPanelComponent,
     ReviewsComponent,
   ],
   template: `
@@ -99,9 +92,7 @@ const SOURCE_COORD_NEW = "coord-new";
             }
           </span>
           <app-filter-bar
-            [pendingEditsCount]="pendingEditsCount()"
             (filterChange)="onFilterChange($event)"
-            (pendingEditsEnabled)="menuOpen.set(false)"
           />
           @if (unifiedEditsCount() > 0) {
             <button class="menu-about-link" (click)="openReviews()">
@@ -151,38 +142,6 @@ const SOURCE_COORD_NEW = "coord-new";
           />
         }
 
-        @if (selectedSubmission()) {
-          <app-place-panel
-            [place]="submissionAsPlace(selectedSubmission()!)"
-            [isVisited]="false"
-            [submissionId]="selectedSubmission()!._id"
-            [isApprover]="auth.user()?.role === 'approver'"
-            [submittedByName]="selectedSubmission()!.submittedBy.displayName"
-            (close)="closeSubmissionPanel()"
-            (approve)="onApproveSubmission()"
-            (decline)="onDeclineSubmission()"
-            class="place-panel"
-          />
-        }
-
-        @if (editDetailLoading()) {
-          <div class="edit-review-panel edit-review-panel--loading">
-            <mat-spinner diameter="32"></mat-spinner>
-          </div>
-        } @else if (selectedEditDetail()) {
-          <app-edit-review-panel
-            [detail]="selectedEditDetail()!"
-            [currentIndex]="selectedEditIdx()"
-            [totalCount]="pendingEdits().length"
-            (close)="closeEditPanel()"
-            (approve)="onApproveEdit()"
-            (decline)="onDeclineEdit()"
-            (next)="onNextEdit()"
-            (prev)="onPrevEdit()"
-            class="edit-review-panel"
-          />
-        }
-
         @if (reviewsOpen()) {
           <app-reviews
             [items]="unifiedEdits()"
@@ -227,21 +186,12 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   allPlaces = signal<PlaceMarker[]>([]);
   panelLoading = signal(false);
   selectedPlace = signal<Place | null>(null);
-  pendingSubmissions = signal<NewSubmission[]>([]);
-  selectedSubmission = signal<NewSubmission | null>(null);
-  pendingEdits = signal<ReviewItemSummary[]>([]);
-  pendingEditsCount = signal(0);
-  selectedEditIdx = signal(-1);
-  selectedEditDetail = signal<ReviewDetail | null>(null);
-  editDetailLoading = signal(false);
   unifiedEdits = signal<UnifiedReviewItem[]>([]);
   unifiedEditsCount = computed(() => this.unifiedEdits().length);
   activeFilters = signal<FilterState>({
     categories: Object.keys(CATEGORY_LABELS) as PlaceCategory[],
     region: null,
     showVisited: true,
-    showPendingSubmissions: false,
-    showPendingEdits: false,
   });
   menuOpen = signal(false);
   reviewsOpen = signal(false);
@@ -279,32 +229,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       if (this.mapReady) this.applyLayerFilters(filters);
     });
 
-    // Show/hide submissions layer based on filter
-    effect(() => {
-      const show = this.activeFilters().showPendingSubmissions;
-      if (!this.mapReady) return;
-      if (show) {
-        this.fetchAndShowSubmissions();
-      } else {
-        this.hideSubmissionsLayer();
-      }
-    }, { allowSignalWrites: true });
 
-    // Show/hide edits layer based on filter
-    effect(() => {
-      const show = this.activeFilters().showPendingEdits;
-      if (!this.mapReady) return;
-      if (show) {
-        this.fetchAndShowEdits();
-      } else {
-        this.hideEditsLayer();
-      }
-    }, { allowSignalWrites: true });
-
-    // Clear the proposed-position marker whenever no edit is being reviewed
-    effect(() => {
-      if (!this.selectedEditDetail()) this.clearCoordChange();
-    });
   }
 
   ngOnInit(): void {
@@ -323,13 +248,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       error: () => this.loading.set(false),
     });
 
-    // Pre-fetch pending review count for the badge (edits + erases)
     if (this.auth.user()?.role === 'approver') {
-      forkJoin([
-        this.submissionsService.getPendingEdits(),
-        this.submissionsService.getPendingErases(),
-      ]).subscribe(([edits, erases]) =>
-        this.pendingEditsCount.set(edits.length + erases.length));
       this.loadUnifiedEdits();
     }
   }
@@ -361,12 +280,6 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       this.mapReady = true;
       if (this.allPlaces().length > 0) {
         this.initLayers(this.allPlaces());
-      }
-      if (this.activeFilters().showPendingSubmissions) {
-        this.fetchAndShowSubmissions();
-      }
-      if (this.activeFilters().showPendingEdits) {
-        this.fetchAndShowEdits();
       }
     });
 
@@ -454,57 +367,6 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
           visited: visitedIds.has(p._id),
         },
       })),
-    };
-  }
-
-  private buildSubmissionsGeoJSON(submissions: NewSubmission[]): GeoJSON.FeatureCollection {
-    return {
-      type: "FeatureCollection",
-      features: submissions
-        .filter((s) => s.placeData.coordinates)
-        .map((s) => ({
-          type: "Feature",
-          id: s._id,
-          geometry: {
-            type: "Point",
-            coordinates: [s.placeData.coordinates!.lng, s.placeData.coordinates!.lat],
-          },
-          properties: { id: s._id, name: s.placeData.name },
-        })),
-    };
-  }
-
-  private buildEditsGeoJSON(edits: ReviewItemSummary[]): GeoJSON.FeatureCollection {
-    const features: GeoJSON.Feature[] = [];
-    edits.forEach((ed, idx) => {
-      const place = this.allPlaces().find(p => p._id === ed.placeId._id);
-      if (!place) return;
-      features.push({
-        type: "Feature",
-        id: ed._id,
-        geometry: {
-          type: "Point",
-          coordinates: [place.coordinates.lng, place.coordinates.lat],
-        },
-        properties: { id: ed._id, idx },
-      });
-    });
-    return { type: "FeatureCollection", features };
-  }
-
-  submissionAsPlace(sub: NewSubmission): Place {
-    return {
-      _id: sub._id,
-      name: sub.placeData.name,
-      category: sub.placeData.category ?? "nature",
-      region: sub.placeData.region ?? "north",
-      coordinates: sub.placeData.coordinates ?? { lat: 31.5, lng: 35.0 },
-      aliases: sub.placeData.aliases ?? [],
-      description: sub.placeData.description ?? "",
-      difficulty: sub.placeData.difficulty ?? null,
-      images: sub.placeData.images ?? [],
-      externalUrl: sub.placeData.externalUrl ?? "",
-      visitorsCount: 0,
     };
   }
 
@@ -627,14 +489,9 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.map.on("click", (e) => {
       if (this.suppressNextMapClick) return;
       this.contextMenu.set(null);
-      const layers: string[] = [LAYER_UNVISITED, LAYER_VISITED];
-      if (this.map.getLayer(LAYER_SUBMISSIONS)) layers.push(LAYER_SUBMISSIONS);
-      if (this.map.getLayer(LAYER_EDITS)) layers.push(LAYER_EDITS);
-      const features = this.map.queryRenderedFeatures(e.point, { layers });
+      const features = this.map.queryRenderedFeatures(e.point, { layers: [LAYER_UNVISITED, LAYER_VISITED] });
       if (!features.length) {
         this.closePanel();
-        this.closeSubmissionPanel();
-        this.closeEditPanel();
       }
     });
 
@@ -672,37 +529,6 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private initSubmissionsLayer(): void {
-    if (this.map.getSource(SOURCE_SUBMISSIONS)) return;
-
-    this.map.addSource(SOURCE_SUBMISSIONS, {
-      type: "geojson",
-      data: this.buildSubmissionsGeoJSON(this.pendingSubmissions()),
-    });
-
-    this.map.addLayer({
-      id: LAYER_SUBMISSIONS,
-      type: "circle",
-      source: SOURCE_SUBMISSIONS,
-      paint: {
-        "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 5, 12, 9],
-        "circle-color": "#7C3AED",
-        "circle-stroke-width": 1.5,
-        "circle-stroke-color": "#fff",
-        "circle-opacity": 0.9,
-      },
-    });
-
-    this.map.on("click", LAYER_SUBMISSIONS, (e) => this.onSubmissionClick(e));
-    this.map.on("mouseenter", LAYER_SUBMISSIONS, () => (this.map.getCanvas().style.cursor = "pointer"));
-    this.map.on("mouseleave", LAYER_SUBMISSIONS, () => (this.map.getCanvas().style.cursor = ""));
-  }
-
-  private refreshSubmissionsSource(): void {
-    const source = this.map.getSource(SOURCE_SUBMISSIONS) as mapboxgl.GeoJSONSource | undefined;
-    source?.setData(this.buildSubmissionsGeoJSON(this.pendingSubmissions()));
-  }
-
   private loadUnifiedEdits(): void {
     forkJoin([
       this.submissionsService.getPendingNew(),
@@ -716,87 +542,6 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       this.unifiedEdits.set(combined);
     });
-  }
-
-  private fetchAndShowSubmissions(): void {
-    this.submissionsService.getPendingNew().subscribe((subs) => {
-      this.pendingSubmissions.set(subs);
-      this.initSubmissionsLayer();
-      if (this.map.getLayer(LAYER_SUBMISSIONS)) {
-        this.map.setLayoutProperty(LAYER_SUBMISSIONS, "visibility", "visible");
-      }
-      this.refreshSubmissionsSource();
-    });
-  }
-
-  private hideSubmissionsLayer(): void {
-    if (this.map.getLayer(LAYER_SUBMISSIONS)) {
-      this.map.setLayoutProperty(LAYER_SUBMISSIONS, "visibility", "none");
-    }
-    this.pendingSubmissions.set([]);
-    this.selectedSubmission.set(null);
-  }
-
-  private initEditsLayer(): void {
-    if (this.map.getSource(SOURCE_EDITS)) return;
-
-    this.map.addSource(SOURCE_EDITS, {
-      type: "geojson",
-      data: this.buildEditsGeoJSON(this.pendingEdits()),
-    });
-
-    this.map.addLayer({
-      id: LAYER_EDITS,
-      type: "circle",
-      source: SOURCE_EDITS,
-      paint: {
-        "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 6, 12, 10],
-        "circle-color": "#F59E0B",
-        "circle-stroke-width": 2,
-        "circle-stroke-color": "#fff",
-        "circle-opacity": 0.95,
-      },
-    });
-
-    this.map.on("click", LAYER_EDITS, (e) => this.onEditMarkerClick(e));
-    this.map.on("mouseenter", LAYER_EDITS, () => (this.map.getCanvas().style.cursor = "pointer"));
-    this.map.on("mouseleave", LAYER_EDITS, () => (this.map.getCanvas().style.cursor = ""));
-  }
-
-  private refreshEditsSource(): void {
-    const source = this.map.getSource(SOURCE_EDITS) as mapboxgl.GeoJSONSource | undefined;
-    source?.setData(this.buildEditsGeoJSON(this.pendingEdits()));
-  }
-
-  private fetchAndShowEdits(): void {
-    forkJoin([
-      this.submissionsService.getPendingEdits(),
-      this.submissionsService.getPendingErases(),
-    ]).subscribe(([edits, erases]) => {
-      const combined: ReviewItemSummary[] = [
-        ...edits.map(e => ({ ...e, type: 'edit' as const })),
-        ...erases.map(e => ({ ...e, type: 'erase' as const })),
-      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      this.pendingEdits.set(combined);
-      this.pendingEditsCount.set(combined.length);
-      this.initEditsLayer();
-      if (this.map.getLayer(LAYER_EDITS)) {
-        this.map.setLayoutProperty(LAYER_EDITS, "visibility", "visible");
-      }
-      this.refreshEditsSource();
-      if (combined.length > 0) {
-        this.openEditByIndex(0);
-      }
-    });
-  }
-
-  private hideEditsLayer(): void {
-    if (this.map.getLayer(LAYER_EDITS)) {
-      this.map.setLayoutProperty(LAYER_EDITS, "visibility", "none");
-    }
-    this.pendingEdits.set([]);
-    this.selectedEditDetail.set(null);
-    this.selectedEditIdx.set(-1);
   }
 
   private initCoordNewLayer(): void {
@@ -860,98 +605,14 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!props) return;
     const place = this.allPlaces().find((p) => p._id === props["id"]);
     if (place) {
-      this.selectedSubmission.set(null);
-      this.selectedEditDetail.set(null);
-      this.selectedEditIdx.set(-1);
       this.openPanel(place);
       this.location.replaceState(`/map/${place._id}`);
-    }
-  }
-
-  private onSubmissionClick(e: mapboxgl.MapLayerMouseEvent): void {
-    e.originalEvent.stopPropagation();
-    const props = e.features?.[0]?.properties;
-    if (!props) return;
-    const sub = this.pendingSubmissions().find((s) => s._id === props["id"]);
-    if (sub) {
-      this.selectedSubmission.set(sub);
-      this.selectedPlace.set(null);
-      this.selectedEditDetail.set(null);
-      this.selectedEditIdx.set(-1);
-      if (this.mapReady && this.map.getLayer(LAYER_SELECTED)) {
-        this.map.setFilter(LAYER_SELECTED, ["==", ["get", "id"], ""]);
-      }
-      if (sub.placeData.coordinates) {
-        this.map.flyTo({
-          center: [sub.placeData.coordinates.lng, sub.placeData.coordinates.lat],
-          zoom: Math.max(this.map.getZoom(), 10),
-          duration: 600,
-        });
-      }
-    }
-  }
-
-  private onEditMarkerClick(e: mapboxgl.MapLayerMouseEvent): void {
-    e.originalEvent.stopPropagation();
-    const props = e.features?.[0]?.properties;
-    if (!props) return;
-    const idx = this.pendingEdits().findIndex(ed => ed._id === props["id"]);
-    if (idx >= 0) this.openEditByIndex(idx);
-  }
-
-  openEditByIndex(idx: number): void {
-    const edits = this.pendingEdits();
-    if (idx < 0 || idx >= edits.length) return;
-    const summary = edits[idx];
-    this.selectedEditIdx.set(idx);
-    this.selectedEditDetail.set(null);
-    this.editDetailLoading.set(true);
-    this.selectedPlace.set(null);
-    this.selectedSubmission.set(null);
-    if (this.mapReady && this.map.getLayer(LAYER_SELECTED)) {
-      this.map.setFilter(LAYER_SELECTED, ["==", ["get", "id"], ""]);
-    }
-    const place = this.allPlaces().find(p => p._id === summary.placeId._id);
-    if (place) {
-      this.map?.flyTo({
-        center: [place.coordinates.lng, place.coordinates.lat],
-        zoom: Math.max(this.map?.getZoom() ?? 7, 10),
-        duration: 600,
-      });
-    }
-    if (summary.type === 'erase') {
-      this.submissionsService.getEraseById(summary._id).subscribe({
-        next: (detail) => { this.selectedEditDetail.set({ ...detail, type: 'erase' }); this.editDetailLoading.set(false); },
-        error: () => this.editDetailLoading.set(false),
-      });
-    } else {
-      this.submissionsService.getEditById(summary._id).subscribe({
-        next: (detail) => {
-          this.selectedEditDetail.set({ ...detail, type: 'edit' });
-          this.editDetailLoading.set(false);
-          const oldCoords = detail.before.coordinates;
-          const newCoords = detail.after.coordinates;
-          if (oldCoords && newCoords &&
-              (oldCoords.lat !== newCoords.lat || oldCoords.lng !== newCoords.lng)) {
-            this.showCoordChange(newCoords);
-            this.map.fitBounds(
-              [
-                [Math.min(oldCoords.lng, newCoords.lng), Math.min(oldCoords.lat, newCoords.lat)],
-                [Math.max(oldCoords.lng, newCoords.lng), Math.max(oldCoords.lat, newCoords.lat)],
-              ],
-              { padding: 120, maxZoom: 14, duration: 700 },
-            );
-          }
-        },
-        error: () => this.editDetailLoading.set(false),
-      });
     }
   }
 
   openPanel(marker: PlaceMarker): void {
     this.panelLoading.set(true);
     this.selectedPlace.set(null);
-    this.selectedSubmission.set(null);
     if (this.mapReady && this.map.getLayer(LAYER_SELECTED)) {
       this.map.setFilter(LAYER_SELECTED, ["==", ["get", "id"], marker._id]);
     }
@@ -972,138 +633,6 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       this.map.setFilter(LAYER_SELECTED, ["==", ["get", "id"], ""]);
     }
     this.location.replaceState("/map");
-  }
-
-  closeSubmissionPanel(): void {
-    this.selectedSubmission.set(null);
-  }
-
-  closeEditPanel(): void {
-    this.selectedEditDetail.set(null);
-    this.selectedEditIdx.set(-1);
-  }
-
-  onApproveSubmission(): void {
-    const sub = this.selectedSubmission();
-    if (!sub) return;
-    this.submissionsService.approve(sub._id).subscribe({
-      next: (result) => {
-        this.placesService.getById(result.placeId).subscribe((place) => {
-          const marker: PlaceMarker = { _id: place._id, name: place.name, category: place.category, region: place.region, coordinates: place.coordinates };
-          this.allPlaces.update((places) => [...places, marker]);
-          if (this.mapReady) this.refreshSource();
-        });
-        this.pendingSubmissions.update((subs) => subs.filter((s) => s._id !== sub._id));
-        if (this.mapReady) this.refreshSubmissionsSource();
-        this.closeSubmissionPanel();
-      },
-      error: () => {},
-    });
-  }
-
-  onDeclineSubmission(): void {
-    const sub = this.selectedSubmission();
-    if (!sub) return;
-    this.submissionsService.decline(sub._id).subscribe({
-      next: () => {
-        this.pendingSubmissions.update((subs) => subs.filter((s) => s._id !== sub._id));
-        if (this.mapReady) this.refreshSubmissionsSource();
-        this.closeSubmissionPanel();
-      },
-      error: () => {},
-    });
-  }
-
-  onApproveEdit(): void {
-    const detail = this.selectedEditDetail();
-    if (!detail) return;
-
-    if (detail.type === 'erase') {
-      const placeId = detail.placeId._id;
-      this.submissionsService.approveErase(detail._id).subscribe({
-        next: () => {
-          // Remove ALL pending review items for this place (edits + other erases)
-          this.pendingEdits.update(items => items.filter(i => i.placeId._id !== placeId));
-          // Remove the place from the map
-          this.allPlaces.update(places => places.filter(p => p._id !== placeId));
-          if (this.mapReady) { this.refreshSource(); this.refreshEditsSource(); }
-          this.pendingEditsCount.set(this.pendingEdits().length);
-          const newLength = this.pendingEdits().length;
-          if (newLength === 0) {
-            this.closeEditPanel();
-          } else {
-            this.openEditByIndex(0);
-          }
-        },
-        error: () => {},
-      });
-    } else {
-      this.submissionsService.approveEdit(detail._id).subscribe({
-        next: () => {
-          // Patch the map marker with any PlaceMarker-relevant fields that changed
-          const after = detail.after;
-          const placeId = detail.placeId._id;
-          if (after.coordinates || after.name || after.category || after.region) {
-            this.allPlaces.update(places => places.map(p =>
-              p._id === placeId ? {
-                ...p,
-                ...(after.coordinates && { coordinates: after.coordinates }),
-                ...(after.name       && { name: after.name }),
-                ...(after.category   && { category: after.category }),
-                ...(after.region     && { region: after.region }),
-              } : p
-            ));
-            if (this.mapReady) this.refreshSource();
-          }
-          const idx = this.selectedEditIdx();
-          this.pendingEdits.update(edits => edits.filter(e => e._id !== detail._id));
-          this.pendingEditsCount.set(this.pendingEdits().length);
-          if (this.mapReady) this.refreshEditsSource();
-          const newLength = this.pendingEdits().length;
-          if (newLength === 0) {
-            this.closeEditPanel();
-          } else {
-            this.openEditByIndex(Math.min(idx, newLength - 1));
-          }
-        },
-        error: () => {},
-      });
-    }
-  }
-
-  onDeclineEdit(): void {
-    const detail = this.selectedEditDetail();
-    if (!detail) return;
-    const idx = this.selectedEditIdx();
-
-    const decline$ = detail.type === 'erase'
-      ? this.submissionsService.declineErase(detail._id)
-      : this.submissionsService.declineEdit(detail._id);
-
-    decline$.subscribe({
-      next: () => {
-        this.pendingEdits.update(items => items.filter(i => i._id !== detail._id));
-        this.pendingEditsCount.set(this.pendingEdits().length);
-        if (this.mapReady) this.refreshEditsSource();
-        const newLength = this.pendingEdits().length;
-        if (newLength === 0) {
-          this.closeEditPanel();
-        } else {
-          this.openEditByIndex(Math.min(idx, newLength - 1));
-        }
-      },
-      error: () => {},
-    });
-  }
-
-  onNextEdit(): void {
-    const idx = this.selectedEditIdx();
-    if (idx < this.pendingEdits().length - 1) this.openEditByIndex(idx + 1);
-  }
-
-  onPrevEdit(): void {
-    const idx = this.selectedEditIdx();
-    if (idx > 0) this.openEditByIndex(idx - 1);
   }
 
   fitIsrael(): void {
@@ -1177,9 +706,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onReviewEraseApproved(placeId: string): void {
     this.allPlaces.update(places => places.filter(p => p._id !== placeId));
-    this.pendingEdits.update(items => items.filter(i => i.placeId._id !== placeId));
-    this.pendingEditsCount.set(this.pendingEdits().length);
-    if (this.mapReady) { this.refreshSource(); this.refreshEditsSource(); }
+    if (this.mapReady) this.refreshSource();
   }
 
   onReviewEditApproved({ placeId, after }: { placeId: string; after: Partial<Place> }): void {
@@ -1195,9 +722,6 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
       ));
       if (this.mapReady) this.refreshSource();
     }
-    this.pendingEdits.update(items => items.filter(i => i.placeId._id !== placeId));
-    this.pendingEditsCount.set(this.pendingEdits().length);
-    if (this.mapReady) this.refreshEditsSource();
   }
 
   onReviewItemRemoved(id: string): void {
