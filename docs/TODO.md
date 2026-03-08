@@ -11,7 +11,6 @@
 - when zoom out combine several locations to 1 circle with a count inside
 - display the number of edits
 - heatmap of visits
-- browser cache for locations details
 
 ## Role promotion — how to make a user an approver
 
