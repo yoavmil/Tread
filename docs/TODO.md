@@ -11,7 +11,6 @@
 - allow login using Facebook
 - when zoom out combine several locations to 1 circle with a count inside
 - display the number of edits
-- merge edits and new location display
 - heatmap of visits
 
 ## Role promotion — how to make a user an approver
