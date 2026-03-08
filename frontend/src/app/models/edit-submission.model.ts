@@ -32,3 +32,27 @@ export interface EraseDetail {
 }
 
 export type ReviewDetail = (EditSubmission & { type: 'edit' }) | EraseDetail;
+
+interface UnifiedReviewBase {
+  _id: string;
+  submittedBy: { _id: string; displayName: string; email: string };
+  createdAt: string;
+}
+
+export interface UnifiedNewItem extends UnifiedReviewBase {
+  type: 'new';
+  placeName: string;
+}
+
+export interface UnifiedEditItem extends UnifiedReviewBase {
+  type: 'edit';
+  placeId: { _id: string; name: string };
+}
+
+export interface UnifiedEraseItem extends UnifiedReviewBase {
+  type: 'erase';
+  placeId: { _id: string; name: string };
+  reason: string;
+}
+
+export type UnifiedReviewItem = UnifiedNewItem | UnifiedEditItem | UnifiedEraseItem;

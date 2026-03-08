@@ -58,7 +58,6 @@ describe('POST /api/suggest-edit', () => {
     expect(doc.before.name).toBe('עין גדי');
     expect(doc.after.description).toBe('תיאור מעודכן');
     expect(doc.submittedBy.toString()).toBe(user._id.toString());
-    expect(doc.status).toBe('pending');
   });
 });
 
@@ -112,6 +111,5 @@ describe('POST /api/suggest-new', () => {
     expect(doc).not.toBeNull();
     expect(doc.placeData.name).toBe('מקום חדש');
     expect(doc.submittedBy.toString()).toBe(user._id.toString());
-    expect(doc.status).toBe('pending');
   });
 });

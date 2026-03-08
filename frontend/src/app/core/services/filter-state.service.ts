@@ -7,8 +7,6 @@ export class FilterStateService {
     categories: Object.keys(CATEGORY_LABELS) as PlaceCategory[],
     region: null,
     showVisited: true,
-    showPendingSubmissions: false,
-    showPendingEdits: false,
   });
 
   set(fs: FilterState): void {
