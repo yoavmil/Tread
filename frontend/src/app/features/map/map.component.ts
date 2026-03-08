@@ -64,9 +64,11 @@ const SOURCE_COORD_NEW = "coord-new";
           <app-search-bar (placeSelected)="onSearchSelect($event)" />
         </div>
         <div class="header-right">
-          <span class="visit-count">
-            {{ visitedCount() }}/{{ allPlaces().length }}
-          </span>
+          @if (auth.isLoggedIn()) {
+            <span class="visit-count">
+              {{ visitedCount() }}/{{ allPlaces().length }}
+            </span>
+          }
           <a routerLink="/profile" class="avatar-btn">
             @if (user()?.photo) {
               <img
@@ -136,6 +138,7 @@ const SOURCE_COORD_NEW = "coord-new";
           <app-place-panel
             [place]="selectedPlace()!"
             [isVisited]="isVisited(selectedPlace()!._id)"
+            [isLoggedIn]="auth.isLoggedIn()"
             (close)="closePanel()"
             (toggleVisit)="onToggleVisit($event)"
             class="place-panel"

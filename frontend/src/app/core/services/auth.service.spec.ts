@@ -160,7 +160,7 @@ describe('AuthService', () => {
   // ── logout() ──────────────────────────────────────────────────────────────
 
   describe('logout()', () => {
-    it('clears the token, resets the user signal, and navigates to /login', () => {
+    it('clears the token, resets the user signal, and navigates to /map', () => {
       service.storeToken('tok');
       service.loadUser().subscribe();
       http.expectOne('/api/users/me').flush(MOCK_USER);
@@ -171,7 +171,7 @@ describe('AuthService', () => {
       expect(service.getToken()).toBeNull();
       expect(service.user()).toBeNull();
       expect(service.isLoggedIn()).toBe(false);
-      expect(navSpy).toHaveBeenCalledWith(['/login']);
+      expect(navSpy).toHaveBeenCalledWith(['/map']);
     });
   });
 });

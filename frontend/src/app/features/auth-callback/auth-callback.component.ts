@@ -39,10 +39,10 @@ export class AuthCallbackComponent implements OnInit {
       this.auth.storeToken(token);
       this.auth.loadUser().subscribe({
         next: () => this.router.navigate(['/map']),
-        error: () => this.router.navigate(['/login'])
+        error: () => this.router.navigate(['/map'])
       });
     } else {
-      this.router.navigate(['/login']);
+      this.router.navigate(['/map']);
     }
   }
 }

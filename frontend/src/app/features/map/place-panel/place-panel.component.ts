@@ -5,9 +5,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatDialog } from '@angular/material/dialog';
 
 import { Place, CATEGORY_LABELS, REGION_LABELS, DIFFICULTY_LABELS } from '../../../models/place.model';
 import { VisitsService } from '../../../core/services/visits.service';
+import { LoginDialogComponent } from '../../login/login-dialog.component';
 
 @Component({
   selector: 'app-place-panel',
@@ -263,6 +265,7 @@ import { VisitsService } from '../../../core/services/visits.service';
 export class PlacePanelComponent {
   @Input() place!: Place;
   @Input() isVisited = false;
+  @Input() isLoggedIn = false;
   @Output() close = new EventEmitter<void>();
   @Output() toggleVisit = new EventEmitter<Place>();
 
@@ -284,9 +287,13 @@ export class PlacePanelComponent {
     return this.place.difficulty ? DIFFICULTY_LABELS[this.place.difficulty] : '';
   }
 
-  constructor(private visits: VisitsService, private router: Router) {}
+  constructor(private visits: VisitsService, private router: Router, private dialog: MatDialog) {}
 
   markVisited(): void {
+    if (!this.isLoggedIn) {
+      this.dialog.open(LoginDialogComponent, { width: '380px', autoFocus: false });
+      return;
+    }
     this.saving = true;
     this.visits.markVisited(this.place._id).subscribe({
       next: (result) => {
