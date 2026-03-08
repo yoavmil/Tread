@@ -713,6 +713,7 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onReviewEditApproved({ placeId, after }: { placeId: string; after: Partial<Place> }): void {
+    this.placesService.evictCache(placeId);
     if (after.coordinates || after.name || after.category || after.region) {
       this.allPlaces.update(places => places.map(p =>
         p._id === placeId ? {
